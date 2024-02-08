@@ -1,6 +1,7 @@
 {
   "name": "group-9-gdp",
   "version": "0.0.0",
+  "description": "A Collaborative Music-Making Webapp",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,6 +9,11 @@
     "build": "vite build",
     "preview": "vite preview"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/LiamHoogstad/Group_9_GDP.git"
+  },
+  "author": "GDP Group 9",
   "dependencies": {
     "vue": "^3.4.15",
     "vue-router": "^4.2.5"
@@ -15,5 +21,9 @@
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.3",
     "vite": "^5.0.11"
-  }
+  },
+  "bugs": {
+    "url": "https://github.com/LiamHoogstad/Group_9_GDP/issues"
+  },
+  "homepage": "https://github.com/LiamHoogstad/Group_9_GDP#readme"
 }
