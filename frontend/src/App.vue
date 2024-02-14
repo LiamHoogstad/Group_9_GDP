@@ -11,12 +11,12 @@ export default {
     const dateOfBirth = ref(null);
     const menu = ref(false);
 
-    const submitForm = () => {
-      console.log("Email:", email.value);
-      console.log("Password:", password.value);
-      console.log("Username:", username.value);
-      console.log("Date of Birth:", dateOfBirth.value);
-    };
+    // const submitForm = () => {
+    //   console.log("Email:", email.value);
+    //   console.log("Password:", password.value);
+    //   console.log("Username:", username.value);
+    //   console.log("Date of Birth:", dateOfBirth.value);
+    // };
 
     return {
       email,
