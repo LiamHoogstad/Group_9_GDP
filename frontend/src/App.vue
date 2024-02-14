@@ -1,5 +1,6 @@
 <script>
 import { ref } from "vue";
+import axios from "axios";
 
 export default {
   name: "App",
@@ -25,6 +26,26 @@ export default {
       menu,
       submitForm,
     };
+  },
+  methods: {
+    async submitForm() {
+      const formData = {
+        email: this.email,
+        password: this.password,
+        username: this.username,
+        dateOfBirth: this.dateOfBirth,
+      };
+
+      try {
+        const response = await axios.post(
+          "http://localhost:5000/submit",
+          formData
+        );
+        console.log(response.data);
+      } catch (error) {
+        console.error(error);
+      }
+    },
   },
 };
 </script>
@@ -63,41 +84,25 @@ export default {
           variant="outlined"
           style="padding: 10px"
         ></v-text-field>
-        <v-menu
-          ref="menu"
-          v-model="menu"
-          :close-on-content-click="false"
-          :nudge-right="40"
-          transition="scale-transition"
-          offset-y
-          min-width="auto"
-        >
-          <template v-slot:activator="{ on, attrs }">
-            <v-text-field
-              v-model="dateOfBirth"
-              label="Date of Birth"
-              placeholder="YYYY-MM-DD"
-              readonly
-              v-bind="attrs"
-              v-on="on"
-              outlined
-              dense
-            ></v-text-field>
-          </template>
+        <p>Please select your Date Of Birth below:</p>
+        <div class="datepick">
           <v-date-picker
             v-model="dateOfBirth"
             @input="menu = false"
-            style="
-              position: relative;
-              justify-content: center;
-              align-items: center;
-              left: 500px;
-            "
           ></v-date-picker>
-        </v-menu>
-        <v-btn @click="submitForm" style="cursor: pointer; left: 50px"
-          >Submit</v-btn
-        >
+        </div>
+        <v-text-field
+          v-model="dateOfBirth"
+          label="Date of Birth"
+          placeholder="YYYY-MM-DD"
+          readonly
+          outlined
+          dense
+          style="padding-top: 20px"
+        ></v-text-field>
+        <div class="datepick">
+          <v-btn @click="submitForm" style="cursor: pointer"> Submit </v-btn>
+        </div>
       </v-responsive>
     </div>
     <RouterView />
@@ -128,5 +133,14 @@ export default {
   left: 20%;
   min-height: 50%;
   box-sizing: border-box;
+}
+.formContainer p {
+  text-align: center;
+}
+.datepick {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding-top: 20px;
 }
 </style>
