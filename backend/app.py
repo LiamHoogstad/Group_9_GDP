@@ -3,18 +3,20 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from pymongo import MongoClient
 from pymongo.server_api import ServerApi
+from dotenv import load_dotenv
 import re
 from datetime import datetime
+import bcrypt
 
 app = Flask(__name__)
 CORS(app)  
 
 # Temporary hard-coded constants for development purposes only
-uri ='blah blah blah'
+#uri ='blah blah blah'
 
+load_dotenv()
 # Create a new client and connect to the server
-client = MongoClient(uri, server_api=ServerApi('1'))
-
+client = MongoClient(os.getenv("DATABASE_URI"), server_api=ServerApi('1'))
 # Send a ping to confirm a successful connection
 try:
     client.admin.command('ping')
@@ -36,12 +38,11 @@ def submit_form():
     users_collection = db.users  
     #check_signup(data, users_collection)
     email = data.get('email')
-    #password = data.get()
+    password = data.get('password').encode("utf-8")
     username = data.get('username')
     dob = data.get('dateOfBirth')
         
     #check email validity
-
     if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
         return jsonify({'error': 'Invalid Email'})
     if users_collection.find_one({ 'email': email }) is not None:
@@ -61,6 +62,11 @@ def submit_form():
     # Check if the age is over 16
     if (years <= 16):
         return jsonify({'error': 'Must be 16 or over to sign up'})
+    
+
+    #all checks passed
+    hashed = bcrypt.hashpw(password,bcrypt.gensalt())
+    data['password']=hashed
 
     # insert the date into the DB
     result = users_collection.insert_one(data)
