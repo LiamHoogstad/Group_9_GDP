@@ -1,35 +1,45 @@
 @import './base.css';
 
-#app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+*{
   font-weight: normal;
+  margin: 0px;
+  padding: 0px;
 }
 
-a,
-.green {
-  text-decoration: none;
-  color: hsla(160, 100%, 37%, 1);
-  transition: 0.4s;
-  padding: 3px;
+body {
+  min-height: 100vh;
+  color: var(--colour-text);
+  background: var(--colour-background);
+  transition:
+    color 0.5s,
+    background-color 0.5s;
+  font-family:
+    'Segoe UI',
+    Roboto,
+    Ubuntu,
+    sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-@media (hover: hover) {
-  a:hover {
-    background-color: hsla(160, 100%, 37%, 0.2);
-  }
+#app {
+}
+
+button {
+  color: var(--colour-background);
+  background-color: var(--colour-interactable);
+  border-radius: 0.25em;
+  padding: 0.5em 1em 0.5em 1em;
+  font-weight: bold;
+  border: none;
+}
+button:hover {
+  background-color: var(--colour-interactable-hover);
+}
+button:active {
+  background-color: var(--colour-interactable-click);
 }
 
 @media (min-width: 1024px) {
-  body {
-    display: flex;
-    place-items: center;
-  }
-
-  #app {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    padding: 0 2rem;
-  }
 }
