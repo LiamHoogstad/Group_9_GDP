@@ -23,9 +23,29 @@ methods: {
     this.audio = event.target.files[0];
   },
   async audioSubmit() {
-    const data = {
+    try{
+    let formData = new FormData();
+    formData.append("audio", this.audio);
+    const response = await axios.post(
+      "http://localhost:5000/upload",
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    );
+    console.log(response);
+    }
+    catch (error) {
+    console.error(error);
+    this.msg = 'Error uploading file';
+  }
+
+    /*const data = {
         audio: this.audio,
     }
+    console.log(data)
     try {
       const response = await axios.post(
         "http://localhost:5000/upload",
@@ -36,7 +56,7 @@ methods: {
     } catch (error) {
       console.error(error);
       this.msg = error;
-    }
+    }*/
   },
   close() {
       // close code
