@@ -7,21 +7,30 @@ from dotenv import load_dotenv
 import re
 from datetime import datetime
 import bcrypt
+import base64
+from gridfs import GridFSBucket
+from bson.objectid import ObjectId
 
 
 app = Flask(__name__)
 CORS(app)  
 
-@@ -16,7 +15,7 @@
-
 load_dotenv()
 # Create a new client and connect to the server
-client = MongoClient(os.getenv("DATABASE_URI"), server_api=ServerApi('1'))
+#client = MongoClient(os.getenv("DATABASE_URI"), server_api=ServerApi('1'))
 client = MongoClient(os.getenv("MONGO_URI"), server_api=ServerApi('1'))
 # Send a ping to confirm a successful connection
 try:
     client.admin.command('ping')
-@@ -29,42 +28,76 @@
+    print("Pinged your deployment. You successfully connected to MongoDB!")
+except Exception as e:
+    print(e)
+
+db = client.MusiCollab
+users_collection = db.users 
+grid_fs_bucket = GridFSBucket(db)
+
+@app.route('/')#@cross_origin()
 def hello_world():
     return 'Hello, World!'
 
@@ -84,7 +93,7 @@ def check_username():
         return jsonify({'isAvailable': True, 'message': 'Username is available.'})
 
 
-@app.route('/submit', methods=['POST'])
+'''@app.route('/submit', methods=['POST'])
 def submit_form():
     data = request.json
 
@@ -121,11 +130,28 @@ def submit_form():
 
     #all checks passed
     hashed = bcrypt.hashpw(password,bcrypt.gensalt())
+    data['password']=hashed'''
+
+@app.route('/submit', methods=['POST'])
+def submit_form():
+    data = request.json
+
+    db = client.MusiCollab  
+    users_collection = db.users  
+    email = data.get('email')
+    password = data.get('password').encode("utf-8")
+    username = data.get('username')
+    dob = data.get('dateOfBirth')
+
+    hashed = bcrypt.hashpw(password,bcrypt.gensalt())
     data['password']=hashed
 
-@@ -75,7 +108,20 @@ def submit_form():
+    # insert the date into the DB
+    result = users_collection.insert_one(data)
+    
+    # Success message if data was transferred successfully
     return jsonify({"success": True, "id": str(result.inserted_id)})
-
+       
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -145,24 +171,33 @@ def login():
 
 @app.route('/upload', methods=['POST'])
 def audio_upload():
-    data = request.json
-    if data:
-        audio = data.get('audio')
-        audioFile = base64.b64decode(audio)
-        user = 1234
+    print(request.files)
+    audio_file = request.files['audio']
+    print(audio_file)
+    print("HI1")
 
-        if audio and user:
-            db = client.MusiCollab
-            audio_collection = db.audiofiles
-            result = audio_collection.insert_one({
+    if audio_file:
+        print("HI2")
+        user = 1234
+        audio_file = audio_file.read()
+        db = client.MusiCollab
+        audio_collection = db.audiofiles
+        result = audio_collection.insert_one({
                 'id': user,
-                'audio': audioFile
+                'audio': audio_file
             })
-            return jsonify({"success": True, "id": str(result.inserted_id)})
-        else:
-            return jsonify({'error': 'Wrong data'}), 422
-    else:
-        return jsonify({'error': 'No files received'}), 422
+        """if user and audio_file:
+            users_collection.find_one({"_id": ObjectId(user)})
+            content_type = audio_file.content_type
+            file_id = grid_fs_bucket.upload_from_stream(
+                audio_file.filename, audio_file, metadata={"content_type": content_type, "user_id": user_id})
+        
+        users_collection.update_one(
+            {'_id': ObjectId(user_id)},
+            {'$set': {'profilePicture': file_id}}
+        )"""
+        return jsonify({'message': 'File Uploaded', 'file_id': str(result)}), 200
+    return jsonify({'message': 'User not found'}), 404
 
 
 @app.route('/audio_files/<user_id>', methods=['GET'])
