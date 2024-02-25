@@ -99,7 +99,6 @@ export default {
     };
 
     const validateAge = () => {
-      console.log("TEST");
       if (dateOfBirth.value) {
         const today = new Date();
         const birthDate = new Date(dateOfBirth.value);
@@ -151,8 +150,12 @@ export default {
             "http://localhost:5000/submit",
             formData
           );
-          console.log(response.data);
-          router.push({ name: "ProfilePage" });
+          if (response.data.success) {
+            console.log("Sign Up Successful");
+            localStorage.setItem("userToken", response.data.access_token);
+            console.log("userToken:", response.data.access_token);
+            router.push({ name: "ProfilePage" });
+          }
         } catch (error) {
           console.error(error);
         }

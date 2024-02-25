@@ -60,7 +60,7 @@ export default {
 
     const submitForm = async () => {
       const isEmailValid = await validateEmailForLogin();
-      const isPasswordValid = validatePassword();
+      const isPasswordValid = await validatePassword();
       loginError.value = "";
 
       if (isEmailValid && isPasswordValid) {
@@ -75,12 +75,15 @@ export default {
           );
           if (response.data.successful) {
             console.log("Login successful");
+            localStorage.setItem("userToken", response.data.access_token);
+            console.log("userToken:", response.data.access_token);
             router.push({ name: "ProfilePage" });
           } else {
             loginError.value =
               "Login failed. Please check your email and password.";
           }
         } catch (error) {
+          console.error("There was an error processing your request", error);
           loginError.value = "There was an error processing your request.";
         }
       } else {
