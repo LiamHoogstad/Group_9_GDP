@@ -26,9 +26,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-#app {
-}
-
 button {
   color: var(--colour-background);
   background-color: var(--colour-interactable);

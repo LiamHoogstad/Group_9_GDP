@@ -13,12 +13,14 @@ export default {
 
 <template>
   <div class="landingPage">
-    <h1>Welcome to MusiCollab!</h1>
+    <div class="boundingBox">
+      <h1>Welcome to MusiCollab!</h1>
     <p>
       If you have an account,
       <router-link to="/sign-in">sign in here</router-link>.
     </p>
     <p>Alternatively, <router-link to="/sign-up">sign up here</router-link>.</p>
+    </div>
   </div>
 </template>
 
@@ -30,13 +32,22 @@ export default {
   justify-content: center;
   height: 100vh;
   text-align: center;
+  background-color: var(--colour-panel-soft);
 }
 
-.landingPage h1 {
-  margin-bottom: 20px;
+.landingPage .boundingBox {
+  padding: 2em;
+  border-radius: 3em;
+  background-color: var(--colour-background);
+  box-shadow: 0 0 2em var(--colour-dropshadow);
 }
 
-.landingPage p {
-  margin-bottom: 10px;
+.boundingBox h1 {
+  font-family: 'Delta Gothic One';
+  margin: 0.5em;
+}
+
+.boundingBox p {
+  margin-bottom: 0.7em;
 }
 </style>

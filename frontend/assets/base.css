@@ -7,6 +7,7 @@
   --ct-c-indigo: #77a4f9;
   --ct-c-indigo-soft: #77afff;
   --ct-c-indigo-hard: #6590ff;
+  --ct-c-transparent-blue: #0059ff50;
   --ct-c-midnight-blue: #02328e;
   --ct-c-midnight-red: #8e0232;
 }
@@ -16,6 +17,7 @@
   --colour-background: var(--ct-c-off-white);
   --colour-panel-soft: var(--ct-c-pale-blue);
   --colour-panel-hard: var(--ct-c-sky-blue);
+  --colour-dropshadow: var(--ct-c-transparent-blue);
   --colour-interactable: var(--ct-c-indigo);
   --colour-interactable-hover: var(--ct-c-indigo-soft);
   --colour-interactable-click: var(--ct-c-indigo-hard);
