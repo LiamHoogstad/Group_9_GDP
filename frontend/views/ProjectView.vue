@@ -1,6 +1,9 @@
 <script setup>
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRouter } from 'vue-router'
 import Slider from '../components/Slider.vue'
+const router = useRouter()
+const title = router.currentRoute.value.params.title
+
 </script>
 
 <template>
@@ -13,7 +16,7 @@ import Slider from '../components/Slider.vue'
         <span>share</span>
         <span>help</span>  
       </div>
-      <h2 id="project_name">Project Name</h2>
+      <h2 id="project_name">{{ title }}</h2>
     </div>
     <div class="centre">
       <button id="play_pause"><img src="@/assets/Play.svg"></button>
