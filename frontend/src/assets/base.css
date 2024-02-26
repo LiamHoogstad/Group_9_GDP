@@ -1,25 +1,57 @@
 /* base.css */
-html,
-body {
-  width: 100%;
-  background-color: #181818; /* Dark background for the overall page */
-  color: #ffffff; /* Default text color set to white for contrast */
-  padding: 0;
-  margin: 0;
+:root {
+  --ct-c-off-white: #f9fbfd;
+  --ct-c-pale-blue: #cbe5f4;
+  --ct-c-pale-turqoise: #c8f9fc;
+  --ct-c-sky-blue: #88c0f0;
+  --ct-c-indigo: #77a4f9;
+  --ct-c-indigo-soft: #77afff;
+  --ct-c-indigo-hard: #6590ff;
+  --ct-c-midnight-blue: #02328e;
+  --ct-c-midnight-red: #8e0232;
 }
 
+/* semantic color variables for this project */
+:root {
+  --colour-background: var(--ct-c-off-white);
+  --colour-panel-soft: var(--ct-c-pale-blue);
+  --colour-panel-hard: var(--ct-c-sky-blue);
+  --colour-interactable: var(--ct-c-indigo);
+  --colour-interactable-hover: var(--ct-c-indigo-soft);
+  --colour-interactable-click: var(--ct-c-indigo-hard);
+  --colour-interest: var(--ct-c-pale-turqoise);
+  --colour-text: var(--ct-c-midnight-blue);
+  --colour-warning: var(--ct-c-midnight-red);
+}
+
+@font-face {
+  font-family: "Delta Gothic One";
+  font-weight: 400;
+  font-style: normal;
+  font-display: auto;
+  src: local("Delta Gothic One"), url('/fonts/Delta_Gothic_One/DelaGothicOne-Regular.ttf') format('truetype');
+}
+/*html,
+body {
+  width: 100%;
+  background-color: #181818; /* Dark background for the overall page 
+  color: #dcaeae; /* Default text color set to white for contrast 
+  padding: 0;
+  margin: 0;
+}*/
+
 /* Add styles for inputs to ensure they are visible */
-input,
+/*input,
 textarea,
 select,
 button {
-  color: white; /* Dark text for inputs for visibility */
+  color: white; /* Dark text for inputs for visibility 
   background-color: #ffffff; /* Light background for inputs */
-  /* ... other styles for form elements ... */
-}
+  /* ... other styles for form elements ... 
+}*/
 
 /* You can also add a class for the text field to ensure it has a visible color */
-.text-field-custom {
+/*.text-field-custom {
   color: white; /* Dark text color for visibility */
   /* ... other styles for .text-field-custom ... */
-}
+

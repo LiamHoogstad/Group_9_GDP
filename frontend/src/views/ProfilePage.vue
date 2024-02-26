@@ -2,6 +2,7 @@
 import { ref, onMounted } from "vue";
 import axios from "axios";
 import blankProfilePicture from "../assets/blankProfilePicture.png";
+import { useRouter } from "vue-router";
 
 export default {
   name: "ProfilePage",
@@ -14,6 +15,7 @@ export default {
     const projects = ref([]);
     const profilePictureUrl = ref(blankProfilePicture);
     const fileInput = ref(null);
+    const router = useRouter();
 
     const onClickFileInput = () => fileInput.value.click();
 
@@ -109,6 +111,15 @@ export default {
         console.error("Error adding project:", error);
       }
     };
+    const clickProject = async (project) => {
+     
+     try {
+       router.push({ name: 'ProjectView', params: { title: project.title }});
+       console.log("Project opened successfully");
+     } catch (error) {
+       console.error("Error adding project:", error);
+     }
+   };
 
     const fetchProjects = async () => {
       const accessToken = localStorage.getItem("userToken");
@@ -134,6 +145,7 @@ export default {
       profilePictureUrl,
       onMounted,
       uploadProfilePicture,
+      clickProject,
       addProjectToDB,
     };
   },
@@ -166,11 +178,12 @@ export default {
           <div class="popupContent">
             <h3>Add New Project</h3>
             <label for="projectTitle">Title:</label>
-            <input type="text" id="projectTitle" v-model="newProjectTitle" />
+            <input type="text" id="projectTitle" v-model="newProjectTitle" style="border-radius: 5px; border: 2px dashed var(--colour-panel-hard);" />
             <label for="projectDescription">Description:</label>
             <textarea
               id="projectDescription"
               v-model="newProjectDescription"
+              style="border-radius: 5px; border: 2px dashed var(--colour-panel-hard);"
             ></textarea>
             <div class="buttonContainer">
               <button @click="addProject">Add Project</button>
@@ -178,7 +191,7 @@ export default {
             </div>
           </div>
         </div>
-        <div v-for="project in projects" :key="project.id" class="project">
+        <div v-for="project in projects" :key="project.id" class="project" @click="clickProject(project)">
           <h3>{{ project.title }}</h3>
           <p>{{ project.description }}</p>
         </div>
@@ -233,6 +246,7 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
+  transform: rotate(180deg);
 }
 
 .profilePictureContainer img {
@@ -248,7 +262,6 @@ export default {
 }
 .separatorBar {
   height: 5px;
-  background-color: white;
   width: 70%;
   margin: 20px 0;
 }
@@ -256,6 +269,7 @@ export default {
 .projectGrid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
+  border: var(--colour-panel-hard);
   gap: 20px;
   width: 70%;
 }
@@ -263,8 +277,8 @@ export default {
 .project {
   min-height: 150px;
   background-color: transparent;
-  border: 3px solid white;
   border-radius: 10px;
+  border: 3px dashed var(--colour-panel-hard);
   display: grid;
   grid-template-rows: repeat(2, 1fr);
   align-items: center;
@@ -273,7 +287,9 @@ export default {
 }
 .project:hover {
   transform: scale(1.1);
+  background-color: var(--colour-interactable-hover);
   transition: 0.2s ease-in-out;
+
 }
 .project h3,
 .project p {
@@ -281,14 +297,14 @@ export default {
 }
 
 .addProject {
-  background-color: transparent;
-  border: 2px dashed transparent;
+  background-color: var(--colour-panel-hard);
   cursor: pointer;
 }
 
 .addProject span {
   font-size: 24px;
-  color: white;
+  background-color: var(--colour-panel-soft);
+  color: var(--colour-text);
 }
 .project img {
   width: 100%;
@@ -299,16 +315,19 @@ export default {
 }
 .popupContent {
   text-align: center;
+  background-color: var(--colour-panel-soft);
   display: flex;
+  border-radius: 10px;
   flex-direction: column;
 }
 .buttonContainer {
   margin-top: auto;
   display: flex;
   justify-content: space-between;
+  border: 3px var(--colour-panel-hard);
   padding: 0 10px;
 }
 .buttonContainer button:hover {
-  color: gray;
+  background-color: var(--colour-interactable-hover);
 }
 </style>

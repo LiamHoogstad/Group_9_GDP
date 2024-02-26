@@ -3,6 +3,7 @@ import ProfilePage from "../views/ProfilePage.vue";
 import SignIn from "../views/SignIn.vue";
 import SignUp from "../views/SignUp.vue";
 import LandingPage from "../views/LandingPage.vue";
+import ProjectView from "../views/ProjectView.vue"
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -27,6 +28,11 @@ const router = createRouter({
       name: "ProfilePage",
       component: ProfilePage,
     },
+    {
+      path: '/profile-page/:title',
+    name: 'ProjectView',
+    component: ProjectView,
+  },
   ],
 });
 
