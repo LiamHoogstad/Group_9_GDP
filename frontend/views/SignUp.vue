@@ -283,7 +283,6 @@ export default {
   transform: translateY(-50%);
 }
 .signUpContainer {
-  color: #ffffff;
   margin-top: 20px;
 }
 .formContainer {
