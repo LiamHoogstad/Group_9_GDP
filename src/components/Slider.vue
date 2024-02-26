@@ -34,46 +34,60 @@ export default {
 <style scoped>
 
 .slider {
-  -webkit-appearance: none;
-  -moz-appearance: none;
   --slider-height: 1.2em;
-  appearance: none;
-  border-radius: 1em;
+  --track-height: 0.4em;
+  border-radius: var(--slider-height);
   height: var(--slider-height);
   width: inherit;
+  appearance: none;
+  overflow: hidden;
   background-color: var(--colour-background); /* Non-gradient background for old browsers */
 }
 
 .slider::-webkit-slider-runnable-track {
-  height: 0.4em;
+  height: var(--track-height);
   border-radius: var(--slider-height);
   background: var(--colour-interactable);
-  background-image: linear-gradient(.25turn, var(--colour-interest), var(--colour-interactable));
+  background-image: linear-gradient(
+    90deg,
+    var(--colour-background) calc(var(--slider-height) * 0.4),
+    var(--colour-interest) calc(var(--slider-height) * 0.6),
+    var(--colour-interactable) calc(100% - (var(--slider-height) * 0.6)),
+    var(--colour-background) calc(100% - (var(--slider-height) * 0.4))
+  );
 }
 .slider::-moz-range-track {
-  height: 0.4em;
-  width: calc(100% - 1em);
+  height: var(--track-height);
+  width: calc(100% - var(--track-height) * 2);
   border-radius: var(--slider-height);
   background: var(--colour-interactable);
-  background-image: linear-gradient(.25turn, var(--colour-interest), var(--colour-interactable));
+  background-image: linear-gradient(
+    90deg,
+    var(--colour-interest),
+    var(--colour-interactable));
 }
 
 .slider::-webkit-slider-thumb {
-  margin-top: calc(var(--slider-height) * -0.3);
+  margin-top: calc((var(--slider-height) - var(--track-height)) * -0.5);
   -webkit-appearance: none;
+  -webkit-box-sizing: border-box;
   background-color: var(--colour-background);
+  box-shadow: calc(100vw + (var(--slider-height) / 2)) 0 0 100vw var(--colour-background);
   height: var(--slider-height);
   width: var(--slider-height);
   border-radius: var(--slider-height);
-  border: calc(var(--slider-height) * 0.33) solid var(--colour-interactable);
+  border: calc((var(--slider-height) - var(--track-height)) / 2) solid var(--colour-interactable);
   cursor: pointer;
 }
 .slider::-moz-range-thumb {
+  -moz-appearance: none;
+  -moz-box-sizing: border-box;
   background-color: var(--colour-background);
-  height: calc(var(--slider-height) * 0.4);
-  width: calc(var(--slider-height) * 0.4);
+  box-shadow: calc(100vw + (var(--slider-height) / 2)) 0 0 100vw var(--colour-background);
+  height: var(--slider-height);
+  width: var(--slider-height);
   border-radius: var(--slider-height);
-  border: calc(var(--slider-height) * 0.33) solid var(--colour-interactable);
+  border: calc((var(--slider-height) - var(--track-height)) / 2) solid var(--colour-interactable);
   cursor: pointer;
 }
 
