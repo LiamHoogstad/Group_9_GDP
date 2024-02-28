@@ -21,7 +21,7 @@ export default {
       } else {
         try {
           const response = await axios.post(
-            "http://localhost:5000/checkEmailForLogin",
+            "http://127.0.0.1:5000/checkEmailForLogin",
             {
               email: email.value,
             }
@@ -70,7 +70,7 @@ export default {
             password: password.value,
           };
           const response = await axios.post(
-            "http://localhost:5000/login",
+            "http://127.0.0.1:5000/login",
             formData
           );
           if (response.data.successful) {

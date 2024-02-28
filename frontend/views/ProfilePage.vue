@@ -27,7 +27,7 @@ export default {
       const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
       try {
         const response = await axios.get(
-          `http://localhost:5000/profilePicture/${userId}`,
+          `http://127.0.0.1:5000/profilePicture/${userId}`,
           {
             headers: { Authorization: `Bearer ${accessToken}` },
           }
@@ -49,7 +49,7 @@ export default {
       if (accessToken) {
         try {
           const response = await axios.get(
-            `http://localhost:5000/fetchUsername/${userId}`,
+            `http://127.0.0.1:5000/fetchUsername/${userId}`,
             {
               headers: { Authorization: `Bearer ${accessToken}` },
             }
@@ -74,7 +74,7 @@ export default {
       if (!accessToken) return;
       try {
         const response = await axios.get(
-          `http://localhost:5000/getProjects/${userId}`,
+          `http://127.0.0.1:5000/getProjects/${userId}`,
           {
             headers: { Authorization: `Bearer ${accessToken}` },
           }
@@ -92,7 +92,7 @@ export default {
       const accessToken = localStorage.getItem("userToken");
       try {
         await axios.post(
-          "http://localhost:5000/uploadProfilePicture",
+          "http://127.0.0.1:5000/uploadProfilePicture",
           formData,
           {
             headers: {
@@ -126,7 +126,7 @@ export default {
     const addProjectToDB = async (project) => {
       const accessToken = localStorage.getItem("userToken");
       try {
-        await axios.post("http://localhost:5000/addProject", project, {
+        await axios.post("http://127.0.0.1:5000/addProject", project, {
           headers: {
             Authorization: `Bearer ${accessToken}`,
           },

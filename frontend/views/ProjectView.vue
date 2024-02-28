@@ -11,7 +11,7 @@ const audioFile = ref(null);
 const audioSrc = ref("");
 const audio = new Audio();
 const isPlaying = ref(false);
-const volume = ref(50);
+const volume = ref(100);
 
 onMounted(() => {
   fetchAudioFile();
@@ -72,7 +72,7 @@ const uploadAudioFile = async () => {
 
   const accessToken = localStorage.getItem("userToken");
   try {
-    await axios.post("http://localhost:5000/uploadAudioToProject", formData, {
+    await axios.post("http://127.0.0.1:5000/uploadAudioToProject", formData, {
       headers: {
         "Content-Type": "multipart/form-data",
         Authorization: `Bearer ${accessToken}`,
@@ -90,7 +90,7 @@ const fetchAudioFile = async () => {
   const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
   try {
     const response = await axios.get(
-      `http://localhost:5000/getAudio/${userId}/${encodeURIComponent(
+      `http://127.0.0.1:5000/getAudio/${userId}/${encodeURIComponent(
         title.value
       )}`,
       {
@@ -111,7 +111,7 @@ const fetchAudioFilename = async () => {
   const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
   try {
     const response = await axios.get(
-      `http://localhost:5000/getAudioFilename/${userId}/${encodeURIComponent(
+      `http://127.0.0.1:5000/getAudioFilename/${userId}/${encodeURIComponent(
         title.value
       )}`,
       {
