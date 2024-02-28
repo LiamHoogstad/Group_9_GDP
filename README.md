@@ -1,6 +1,6 @@
-# Group_9_GDP
+# Group_9_GDP - Release 1
 
-This repository will host the code and implementation for group 9's project in the CSU44098 module
+This branch is our release 1 of our Group Design Project, MusiCollab. MusiCollab is aimed to be a colaborative music creation website where you can create and edit projects with friends and strangers by adding tracks, manipulating their audio settings and much more! We achieved all of goal for this release and an extra feature of a working custom volume slider.
 
 ## Set the backend up
 
@@ -19,47 +19,61 @@ Ensure that the latest version of python is installed on your device
 
 ### 3
 
-- For Windows, paste this in your terminal
+#### Setting up the development environment
+
+- For Windows, paste this in your terminal to enter the development environment
   -- [path to Activate.ps1, should be something like C:\...\venv\Scripts\Activate.ps1]
-- For macOS/Unix, paste this in your terminal
-  -- [path to Activate.ps1 (i think, it's one of the activates anyway), should be something like C:\...\venv\bin\Activate...]
+- For macOS/Unix, paste this in your terminal to enter the development environment
+  -- [path to activate, should be something like C:\...\venv\bin\activate...]
 
 ### 4
 
 - Paste this in your terminal
-  -- pip install Flask pymongo[srv] flask-cors
+  -- pip install -r requirements.txt
 
-### 5
+### 6
 
-- Run the application with
-  -- flask run OR
+- Run the application with:
   -- python app.py
 
 ### Code Explanation
 
-This Python code is for a backend application built with Flask, which serves as a web server. It interacts with a MongoDB database to store user data. Here's a simplified explanation of each part:
+This code represents a backend application developed using Flask, a popular Python web framework. It integrates various functionalities including user management, file upload, and interaction with MongoDB. Below is a brief explanation of the key parts of this code:
 
-- Imports and Setup:
+#### Imports and Initial Setup:
 
-  -- Various modules are imported, including Flask for the web server, CORS (Cross-Origin Resource Sharing) to allow requests from different domains, and MongoClient for interacting with MongoDB.
-  An instance of the Flask app is created, and CORS is enabled for it.
+- Various libraries are imported for handling web requests, security, file management, and database interactions.
+- A Flask application instance is created, and Flask extensions like Bcrypt for password hashing and JWTManager for token-based authentication are initialized.
+- CORS (Cross-Origin Resource Sharing) is enabled allowing the backend to accept requests from different origins.
 
-- MongoDB Connection:
+#### Configuration:
 
--- A connection to MongoDB is established using a URI (Uniform Resource Identifier), which contains the credentials and location of the database. The actual URI is replaced with 'blah blah blah' as a placeholder.
-A test command (ping) is sent to the database to confirm connectivity.
+- A secret key for JWT (JSON Web Tokens) is generated for securing token-based authentication.
+- Environment variables are loaded (e.g., database connection strings) using dotenv.
+- MongoDB client is set up to connect to a database, and collections and GridFSBucket for file storage are initialized.
 
-- Routes and Endpoints:
+#### Routes and Endpoints:
 
--- Two routes (endpoints) are defined for the web server:
---- The root (/) route simply returns "Hello, World!" as a response to GET requests.
---- The /submit route listens for POST requests. When data is submitted to this route, it's expected to be in JSON format. This data is then inserted into the MongoDB database under the MusiCollab database and users collection.
-After successfully inserting the data, the server responds with a JSON object indicating success and the inserted document's ID.
+- Various endpoints are defined for different functionalities such as user registration, login, email and username checks, file uploads (both general and specific to a user's profile picture), and project management.
+- The /upload endpoint allows files to be uploaded and stored in MongoDB using GridFS.
+- The /checkEmail, /checkUsername, /submit, /login, and other user-related endpoints allow for user management such as registration, email validation, and authentication.
+- Password validation for login uses bcrypt to securely check hashed passwords.
+- JWT tokens are used for authentication and are required for certain actions like uploading a profile picture or adding a project.
+- Project and audio management is facilitated through endpoints that allow adding projects, uploading audio files to projects, and retrieving project-related information.
 
-- Running the Server:
+#### File Upload and Retrieval:
 
--- Finally, if the script is run directly (not imported as a module), the Flask app starts and listens for incoming requests on the default port (usually 5000 for Flask apps).
-In essence, this application can receive user data through its /submit endpoint and store that data in a MongoDB database, providing a basic backend for a user signup feature.
+- Files (like profile pictures and audio files) can be uploaded and linked to users or projects. GridFS is used for storing files that exceed the BSON document size limit in MongoDB.
+- File metadata is managed, and files can be retrieved via specific endpoints, allowing for dynamic content management related to user profiles and projects.
+
+#### Security and Data Management:
+
+- jwt_required decorator is used to protect routes that require user authentication.
+- Data validation and error handling are implemented to ensure that the backend responds appropriately to invalid requests or database errors.
+
+#### Running the Application:
+
+Overall, this backend is designed for a platform where users can create profiles, manage projects, and upload files, with secure authentication and data storage practices.
 
 ## Set the frontend up
 
@@ -67,42 +81,87 @@ Ensure the latest version of Node.js is installed on your device
 
 ### 1
 
-- In your terminal type cd frontend
+- In your terminal, ensure you are in the root directory
 
 ### 2
 
-- Install dependencies, run the following:
+- Install npm in the directory. Paste this in the terminal:
+  -- npm init -y AND
   -- npm install
-  -- npm install vue@next axios vuetify@next
 
 ### 3
 
-- Run the project by typing npm run dev in the terminal
+- Run the project with:
+  -- npm run dev
 
 ### Code Explanation
 
-- Script Section:
-  -- Imports and Setup: The script imports Vue's ref function and axios for state management and making HTTP requests, respectively.
-  -- Reactive State: It defines reactive state variables for email, password, username, dateOfBirth, and menu using the ref function. These variables will store the input values from the form.
-  -- Submit Form Method: This method is defined under methods and is responsible for taking the form data, encapsulating it into formData, and sending it to a backend server located at "http://localhost:5000/submit" using axios.post. It logs the response from the server or catches and logs any error if the request fails.
-- Template Section:
-  -- Structure: The template markup defines the structure of the signup form, including fields for email, password, username, and date of birth.
-  -- Data Binding: Uses v-model to bind input fields to the reactive state variables (email, password, username, dateOfBirth), enabling two-way data binding.
-  -- Date Picker: Includes a v-date-picker component for selecting a date of birth, which updates the dateOfBirth variable.
-  -- Submit Button: Contains a button that, when clicked, triggers the submitForm method.
-- Style Section:
-  -- Defines CSS styles scoped to this component, styling the signup form's appearance, including the layout of the form container and the positioning of the header.
+#### Overall Structure and Configuration:
 
-  In Simple Terms:
-  When a user fills out the form on the webpage and clicks the "Submit" button, the form data is collected and sent to a server. The server's address is "http://localhost:5000/submit". If the data is sent successfully, the server's response is logged to the console. If there's an error (like the server is down or the URL is incorrect), the error information is logged to the console. The style section makes sure the form looks nice and is positioned correctly on the page.
+- App.vue
+  This is the root component of the Vue application. It primarily serves as a container for the app, with a <router-view /> tag that serves as the outlet for displaying components based on the current route.
+- main.js
+  This is the entry point of the Vue application. It creates the Vue instance, applies global configurations, and mounts the app to the DOM. It includes setup for Vuetify (a material design component library) and Vue Router for managing navigation.
+- index.js
+  Defines the routes for the application, linking URLs to components. It includes routes for the landing page, sign-in, sign-up, profile page, and project view.
+
+#### Components:
+
+- LandingPage.vue
+  Serves as the homepage, guiding users to sign in or sign up.
+- SignIn.vue
+  Allows existing users to sign in by entering their email and password. It communicates with the backend to validate user credentials and handle session management.
+- SignUp.vue
+  Enables new users to create an account by providing details like email, password, username, and date of birth. It includes validation for each field and communicates with the backend to check the availability of email and username and to register the user.
+- ProfilePage.vue
+  Displays user information and a list of projects associated with the logged-in user. It allows users to upload a profile picture and add new projects. This component interacts with the backend for fetching and updating user-related data.
+- ProjectView.vue
+  A detailed view for individual projects, containing specific functionalities for project management and collaboration.
+- Slider.vue
+  A custom slider component, used within the application for settings such as volume control.
+
+#### Communication with Flask Backend:
+
+- The Vue components use axios for HTTP requests, interacting with the Flask backend endpoints you provided earlier. This includes user authentication, profile updates, project management, and file uploads.
+- Data fetched from the backend (like user details or project information) is displayed in the respective components. For instance, ProfilePage.vue would display user projects and personal information retrieved from the backend.
+- Actions like signing in, signing up, uploading pictures, or adding projects involve sending data to the backend and handling responses, which may involve updating the local Vue state or redirecting the user based on the outcome.
+
+#### Style and Appearance:
+
+- The application uses Vuetify for UI components and styling, ensuring a material design look and feel across the application.
+- Each Vue file contains a <style></style> section, scoped to the component, defining CSS rules specific to the component's elements for customized styling.
+
+#### Functionality and Flow:
+
+- The application flow is managed by Vue Router, guiding users through different components based on their actions and authentication status.
+- User authentication status (e.g., logged in/out) could influence navigational options and accessible content, directing users to the appropriate pages.
+- The frontend interacts with the backend for various operations, ensuring that user data and project information are up-to-date and consistent with the database.
 
 ## To run the whole project
 
-- Have 2 terminals open. One where you cd into the backend and the other where you cd into the frontend
-  -- In the backend run one of these 2 commands
-  --- flask run
-  --- python app.py
-  -- You should now see in the terminal that we have connected to the MongoDB database
-  -- For the front end, type in the following command:
-  --- npm run dev
-  -- now if you go to the localhost portal enter the details, open the web console and you will be able to see the success token after submitting. The user information has not been error handled. Make sure you change the uri with the one from discord
+- Have 2 terminals open.
+  - Terminal 1:
+    Run:
+    cd backend
+    Then:
+    [run the development environment]
+    Finally, run:
+    python app.py
+  - Terminal 2:
+    Run:
+    npm run dev
+
+## Demonstration Purposes
+
+We would like to guide you through 2 processes for your assesment.
+
+- 1. Existing user:
+     On the landing page you will click on the page that allows you to SIGN IN.
+     Use:
+     username: jbcfenlon@gmail.com
+     password: GroupDesignProject9!  
+     here you will be brought to an existing user profile page with their own custom profile picture and their projects that exist already. Feel free to click and test any of these. You can change the profile picture, or click on any of the projects and use the play/pause button as you wish and make use of our custom volume slider.
+- 2. New user:
+     On the landing page you will click on the page that allows you to SIGN UP.
+     Sign up with your own details ensuring a valid email, password that is atleast 8 characters long, has a number, capital letter and a special character (all passwords are hashed for privacy reasons), a username, and a DOB (must be over 18)
+     Upon completion you will be brought to the profile page where you can customise your profile with your own profile picture, add your own projects, and add some of your own audio files to the project you created, or you can use the files we have provided in the assets folder in frontend. Your signup information has all been saved to the database and where applicable the profile picture, audio files and project details are also all saved for future use so they can be played and streamed rather than locally.
