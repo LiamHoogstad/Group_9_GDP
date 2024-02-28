@@ -1,5 +1,13 @@
 <template>
-  <input ref="input" v-model="currentValue" type="range" :min="min" :max="max" class="slider" @input="onInput"/>
+  <input
+    ref="input"
+    v-model="currentValue"
+    type="range"
+    :min="min"
+    :max="max"
+    class="slider"
+    @input="onInput"
+  />
 </template>
 
 <script>
@@ -7,7 +15,7 @@ export default {
   props: {
     value: {
       type: Number,
-      required: true
+      required: true,
     },
     min: {
       type: Number,
@@ -20,19 +28,23 @@ export default {
   },
   data() {
     return {
-      currentValue: this.value
+      currentValue: this.value,
     };
+  },
+  watch: {
+    value(newValue) {
+      this.currentValue = newValue;
+    },
   },
   methods: {
     onInput() {
-      this.$emit('input', parseInt(this.currentValue));
-    }
-  }
+      this.$emit("update:modelValue", parseInt(this.currentValue));
+    },
+  },
 };
 </script>
 
 <style scoped>
-
 .slider {
   --slider-height: 1.2em;
   --track-height: 0.4em;
@@ -41,7 +53,9 @@ export default {
   width: inherit;
   appearance: none;
   overflow: hidden;
-  background-color: var(--colour-background); /* Non-gradient background for old browsers */
+  background-color: var(
+    --colour-background
+  ); /* Non-gradient background for old browsers */
 }
 
 .slider::-webkit-slider-runnable-track {
@@ -64,7 +78,8 @@ export default {
   background-image: linear-gradient(
     90deg,
     var(--colour-interest),
-    var(--colour-interactable));
+    var(--colour-interactable)
+  );
 }
 
 .slider::-webkit-slider-thumb {
@@ -72,23 +87,26 @@ export default {
   -webkit-appearance: none;
   -webkit-box-sizing: border-box;
   background-color: var(--colour-background);
-  box-shadow: calc(100vw + (var(--slider-height) / 2)) 0 0 100vw var(--colour-background);
+  box-shadow: calc(100vw + (var(--slider-height) / 2)) 0 0 100vw
+    var(--colour-background);
   height: var(--slider-height);
   width: var(--slider-height);
   border-radius: var(--slider-height);
-  border: calc((var(--slider-height) - var(--track-height)) / 2) solid var(--colour-interactable);
+  border: calc((var(--slider-height) - var(--track-height)) / 2) solid
+    var(--colour-interactable);
   cursor: pointer;
 }
 .slider::-moz-range-thumb {
   -moz-appearance: none;
   -moz-box-sizing: border-box;
   background-color: var(--colour-background);
-  box-shadow: calc(100vw + (var(--slider-height) / 2)) 0 0 100vw var(--colour-background);
+  box-shadow: calc(100vw + (var(--slider-height) / 2)) 0 0 100vw
+    var(--colour-background);
   height: var(--slider-height);
   width: var(--slider-height);
   border-radius: var(--slider-height);
-  border: calc((var(--slider-height) - var(--track-height)) / 2) solid var(--colour-interactable);
+  border: calc((var(--slider-height) - var(--track-height)) / 2) solid
+    var(--colour-interactable);
   cursor: pointer;
 }
-
 </style>

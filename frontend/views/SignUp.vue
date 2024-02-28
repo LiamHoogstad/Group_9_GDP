@@ -28,7 +28,7 @@ export default {
       } else {
         try {
           const response = await axios.post(
-            "http://localhost:5000/checkEmail",
+            "http://127.0.0.1:5000/checkEmail",
             {
               email: email.value,
             }
@@ -77,7 +77,7 @@ export default {
       } else {
         try {
           const response = await axios.post(
-            "http://localhost:5000/checkUsername",
+            "http://127.0.0.1:5000/checkUsername",
             {
               username: username.value,
             }
@@ -147,7 +147,7 @@ export default {
             dateOfBirth: dateOfBirth.value,
           };
           const response = await axios.post(
-            "http://localhost:5000/submit",
+            "http://127.0.0.1:5000/submit",
             formData
           );
           if (response.data.success) {
