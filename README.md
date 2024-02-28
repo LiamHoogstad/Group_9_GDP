@@ -1,6 +1,6 @@
 # Group_9_GDP - Release 1
 
-This branch is our release 1 of our Group Design Project, MusiCollab. MusiCollab is aimed to be a colaborative music creation website where you can create and edit projects with friends and strangers by adding tracks, manipulating their audio settings and much more! We achieved all of goal for this release and an extra feature of a working custom volume slider.
+This branch is our release 1 of our Group Design Project, MusiCollab. MusiCollab is aimed to be a collaborative music creation website where you can create and edit projects with friends and strangers by adding tracks, manipulating their audio settings and much more! We achieved all of goal for this release and an extra feature of a working custom volume slider.
 
 # ——————————————— Setting up the Backend ——————————————————— #
 
@@ -8,36 +8,47 @@ Ensure that the latest version of python is installed on your device
 
 ### 1
 
-- In your terminal, starting from root directory type cd backend
+- In your terminal, starting from root directory: 
+  -- Type cd backend
 
 ### 2
-
-- For Windows
-  -- python -m venv venv
-- For macOS/Unix
-  -- python3 -m venv venv
+- In the backend directory type:
+  - For Windows
+    -- python -m venv venv
+  - For macOS/Unix
+    -- python3 -m venv venv
 
 ### 3
 
   # Setting up the development environment
 
-- The step the above creates a folder called 'venv' within the backend folder. Within the venv
+- The step above creates a folder called 'venv' within the backend folder. Within the venv
   folder is a 'bin' folder, which has a file called "Activeate.ps1" inside it.
 
 - Past the below to set up the virtual environment:
 
   - Ensure you are in the backend directory, Then:
     - For Windows, paste this in your terminal to enter the development environment
-      -- [Absolute (not relative) path to the 'Activate.ps1' file]
-            - should be something like "C:\...\venv\Scripts\Activate.ps1"
+      -- .\venv\Scripts\Activate.ps1
     - For macOS/Unix, paste this in your terminal to enter the development environment
-      -- [Absolute (not relative) path to the 'Activate.ps1' file], minus the '.ps1' at the end
-            - should be something like "C:\...\venv\bin\Activate"
+      -- source [Absolute (not relative) path to the 'Activate.ps1' file], minus the '.ps1' at the end
+            - should be something like "source C:\...\venv\bin\Activate"
+            - Ensure you add 'source' before the path of the 'Activate.ps1' file on macOS/Unix
+            - Ensure you delete the '.ps1' from the end of the file path for macOS/Unix
 
 ### 4
 
-- Paste this in your terminal
+- Next, paste this in your terminal
   -- pip install -r requirements.txt
+
+### 5
+
+- Next, a file called '.env' needs to be added to the 'backend' folder.
+- In the file called '.env', you will need to paste a single line like "MONGO_URI = {mongo url}"
+- This line is a key to access the MongoDB database and so we won't have publicly available
+- We have emailed you (Professor and Demonstrator) the line which you should paste into this '.env' file
+  -- The subject of the email is "Group 9 ENV"
+- Copy and paste this line directly into the .env file you created in your 'backend' folder, and save this change.
 
 ### 6
 
@@ -93,9 +104,9 @@ Ensure the latest version of Node.js is installed on your device
 
 ### 2
 
-- Install npm in the directory. Paste this in the terminal:
+- Install npm in the directory, by pasting this in the terminal:
   -- npm init -y 
-        AND
+        THEN
   -- npm install
 
 ### 3
@@ -148,7 +159,7 @@ Ensure the latest version of Node.js is installed on your device
 
 # ———————————————— To run the whole project ——————————————— #
 
-- Have 2 terminals open, each starting from the project root diectory:
+- Have 2 terminals open, each starting from the project root directory:
   - Terminal 1:
     Run:
     cd backend
@@ -164,9 +175,9 @@ Ensure the latest version of Node.js is installed on your device
 - To load the web application, ctrl/cmd click the link in the frontend terminal, or copy/paste the link into
   your browser
 
-## Demonstration Purposes
+## Demonstration / Application Testing Purposes
 
-We would like to guide you through 2 processes for your assesment.
+We would like to guide you through 2 processes for your assessment.
 
 - 1. Existing user:
      On the landing page you will click on the page that allows you to SIGN IN.
@@ -176,5 +187,18 @@ We would like to guide you through 2 processes for your assesment.
      here you will be brought to an existing user profile page with their own custom profile picture and their projects that exist already. Feel free to click and test any of these. You can change the profile picture, or click on any of the projects and use the play/pause button as you wish and make use of our custom volume slider.
 - 2. New user:
      On the landing page you will click on the page that allows you to SIGN UP.
-     Sign up with your own details ensuring a valid email, password that is atleast 8 characters long, has a number, capital letter and a special character (all passwords are hashed for privacy reasons), a username, and a DOB (must be over 18)
-     Upon completion you will be brought to the profile page where you can customise your profile with your own profile picture, add your own projects, and add some of your own audio files to the project you created, or you can use the files we have provided in the assets folder in frontend. Your signup information has all been saved to the database and where applicable the profile picture, audio files and project details are also all saved for future use so they can be played and streamed rather than locally.
+     Sign up with your own details ensuring a valid and unused email, password that is at least 8 characters long, has a number, capital letter and a special character (all passwords are hashed for privacy reasons), a username, and a DOB (must be over 18)
+     Upon completion you will be brought to the profile page where you can customise your profile with your own profile picture, add your own projects, and add/upload some of your own audio files to the project you created. To test uploading audio files you can use your own mp3 files or you can use the mp3 files we have provided in the assets folder in frontend. Your signup information has all been saved to the database and where applicable the profile picture, audio files and project details are also all saved for future use so they can be played and streamed rather than locally.
+
+Other Notes:
+
+- You can close the application and reopen it to access accounts, projects and audio files you created/uploaded
+  previously
+- You can navigate from the projects page to the profile page back simply going back a page as normal in your browser
+- Don't forget the '.env' file!
+- Some frontend buttons exist, such as burger menu icon (top right) or top navigation bar in the project view,
+  and don't have any functionality implemented yet.
+    - These buttons were not in scope for release 1, and they are just placeholders for now.
+- If you upload an audio file over an existing audio file in a project, it will delete/overwrite the existing/current
+  audio file in the project
+- Have fun!
