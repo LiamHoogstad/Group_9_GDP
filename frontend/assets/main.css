@@ -26,20 +26,5 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-button {
-  color: var(--colour-background);
-  background-color: var(--colour-interactable);
-  border-radius: 0.25em;
-  padding: 0.5em 1em 0.5em 1em;
-  font-weight: bold;
-  border: none;
-}
-button:hover {
-  background-color: var(--colour-interactable-hover);
-}
-button:active {
-  background-color: var(--colour-interactable-click);
-}
-
 @media (min-width: 1024px) {
 }

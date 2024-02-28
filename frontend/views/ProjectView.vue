@@ -14,7 +14,7 @@ const title = router.currentRoute.value.params.title
         <span>edit</span>
         <span>insert</span>
         <span>share</span>
-        <span>help</span>  
+        <span>help</span>
       </div>
       <h2 id="project_name">{{ title }}</h2>
     </div>
@@ -71,6 +71,22 @@ h2#project_name {
   margin-left: 0.25em;
 }
 
+
+button {
+  color: var(--colour-background);
+  background-color: var(--colour-interactable);
+  border-radius: 0.25em;
+  padding: 0.25em 1em 0.25em 1em;
+  font-weight: bold;
+  border: none;
+}
+button:hover {
+  background-color: var(--colour-interactable-hover);
+}
+button:active {
+  background-color: var(--colour-interactable-click);
+}
+
 button#play_pause {
   margin-bottom: 0.5em;
   cursor: pointer;
@@ -81,16 +97,22 @@ button#play_pause img {
   height: 1em;
 }
 
-#master_volume {
-}
-
 button#hamburger {
   border-radius: 100% 0 0 100%;
+  padding: 0.75em 1em 0.75em 1em;
   cursor: pointer;
+  display: flex;
 }
 
 button#hamburger img {
   width: 2em;
   height: 2em;
+}
+
+#track_list .track{
+  margin: 1em 0 0 1em;
+  padding: 1em 1em 1em 2em;
+  background-color: var(--colour-interactable);
+  border-radius: 5em 0 0 5em;
 }
 </style>
