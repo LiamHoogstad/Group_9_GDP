@@ -219,6 +219,21 @@ h2#project_name {
   margin-left: 0.25em;
 }
 
+button {
+  color: var(--colour-background);
+  background-color: var(--colour-interactable);
+  border-radius: 0.25em;
+  padding: 0.25em 1em 0.25em 1em;
+  font-weight: bold;
+  border: none;
+}
+button:hover {
+  background-color: var(--colour-interactable-hover);
+}
+button:active {
+  background-color: var(--colour-interactable-click);
+}
+
 button#play_pause {
   margin-bottom: 0.5em;
   cursor: pointer;
