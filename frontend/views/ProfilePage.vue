@@ -16,7 +16,6 @@ export default {
     const profilePictureUrl = ref(blankProfilePicture);
     const fileInput = ref(null);
     const router = useRouter();
-
     const onClickFileInput = () => fileInput.value.click();
 
     const fetchProfilePicture = async () => {
@@ -39,11 +38,53 @@ export default {
           profilePictureUrl.value = blankProfilePicture;
         }
       } catch (error) {
-        console.error("Error fetching profile picture:", error);
         profilePictureUrl.value = blankProfilePicture;
       }
     };
-
+    const fetchUsername = async () => {
+      const accessToken = localStorage.getItem("userToken");
+      console.log(accessToken);
+      const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+      console.log(userId);
+      if (accessToken) {
+        try {
+          const response = await axios.get(
+            `http://localhost:5000/fetchUsername/${userId}`,
+            {
+              headers: { Authorization: `Bearer ${accessToken}` },
+            }
+          );
+          username.value = response.data.username;
+          projects.value = response.data.projects;
+        } catch (error) {
+          username.value = "Error loading username";
+          projects.value = [];
+          console.error("Error:", error);
+        }
+        await fetchProfilePicture();
+        //await fetchProjects();
+      } else {
+        username.value = "Not logged in";
+        projects.value = [];
+      }
+    };
+    const fetchProjects = async () => {
+      const accessToken = localStorage.getItem("userToken");
+      const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+      if (!accessToken) return;
+      try {
+        const response = await axios.get(
+          `http://localhost:5000/getProjects/${userId}`,
+          {
+            headers: { Authorization: `Bearer ${accessToken}` },
+          }
+        );
+        projects.value = response.data;
+        console.log(JSON.stringify(projects.value));
+      } catch (error) {
+        console.error("Error fetching projects:", error);
+      }
+    };
     const uploadProfilePicture = async (file) => {
       if (!file) return;
       const formData = new FormData();
@@ -65,24 +106,8 @@ export default {
         console.error("Upload Error:", error);
       }
     };
-
     onMounted(async () => {
-      const accessToken = localStorage.getItem("userToken");
-      if (accessToken) {
-        try {
-          const response = await axios.get("http://localhost:5000/protected", {
-            headers: { Authorization: `Bearer ${accessToken}` },
-          });
-          username.value = response.data.username;
-        } catch (error) {
-          username.value = "Error loading username";
-          console.error("Error:", error);
-        }
-        await fetchProfilePicture();
-        await fetchProjects();
-      } else {
-        username.value = "Not logged in";
-      }
+      await fetchUsername();
     });
 
     const addProject = () => {
@@ -112,27 +137,14 @@ export default {
       }
     };
     const clickProject = async (project) => {
-     
-     try {
-       router.push({ name: 'ProjectView', params: { title: project.title }});
-       console.log("Project opened successfully");
-     } catch (error) {
-       console.error("Error adding project:", error);
-     }
-   };
-
-    const fetchProjects = async () => {
-      const accessToken = localStorage.getItem("userToken");
-      if (!accessToken) return;
       try {
-        const response = await axios.get("http://localhost:5000/getProjects", {
-          headers: { Authorization: `Bearer ${accessToken}` },
-        });
-        projects.value = response.data;
+        router.push({ name: "ProjectView", params: { title: project.title } });
+        console.log("Project opened successfully");
       } catch (error) {
-        console.error("Error fetching projects:", error);
+        console.error("Error adding project:", error);
       }
     };
+
     return {
       username,
       projects,
@@ -147,6 +159,7 @@ export default {
       uploadProfilePicture,
       clickProject,
       addProjectToDB,
+      fetchUsername,
     };
   },
 };
@@ -178,12 +191,23 @@ export default {
           <div class="popupContent">
             <h3>Add New Project</h3>
             <label for="projectTitle">Title:</label>
-            <input type="text" id="projectTitle" v-model="newProjectTitle" style="border-radius: 5px; border: 2px dashed var(--colour-panel-hard);" />
+            <input
+              type="text"
+              id="projectTitle"
+              v-model="newProjectTitle"
+              style="
+                border-radius: 5px;
+                border: 2px dashed var(--colour-panel-hard);
+              "
+            />
             <label for="projectDescription">Description:</label>
             <textarea
               id="projectDescription"
               v-model="newProjectDescription"
-              style="border-radius: 5px; border: 2px dashed var(--colour-panel-hard);"
+              style="
+                border-radius: 5px;
+                border: 2px dashed var(--colour-panel-hard);
+              "
             ></textarea>
             <div class="buttonContainer">
               <button @click="addProject">Add Project</button>
@@ -191,7 +215,12 @@ export default {
             </div>
           </div>
         </div>
-        <div v-for="project in projects" :key="project.id" class="project" @click="clickProject(project)">
+        <div
+          v-for="project in projects"
+          :key="project.id"
+          class="project"
+          @click="clickProject(project)"
+        >
           <h3>{{ project.title }}</h3>
           <p>{{ project.description }}</p>
         </div>
@@ -246,14 +275,12 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  transform: rotate(180deg);
 }
 
 .profilePictureContainer img {
   max-width: 100%;
   max-height: 100%;
   border-radius: 50%;
-  transform: rotateX(180deg);
 }
 
 .profilePageStatsContainer {
@@ -289,7 +316,6 @@ export default {
   transform: scale(1.1);
   background-color: var(--colour-interactable-hover);
   transition: 0.2s ease-in-out;
-
 }
 .project h3,
 .project p {
