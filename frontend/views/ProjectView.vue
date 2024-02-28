@@ -244,16 +244,22 @@ button#play_pause img {
   height: 1em;
 }
 
-#master_volume {
-}
-
 button#hamburger {
   border-radius: 100% 0 0 100%;
+  padding: 0.75em 1em 0.75em 1em;
   cursor: pointer;
+  display: flex;
 }
 
 button#hamburger img {
   width: 2em;
   height: 2em;
+}
+
+#track_list .track{
+  margin: 1em 0 0 1em;
+  padding: 1em 1em 1em 2em;
+  background-color: var(--colour-interactable);
+  border-radius: 5em 0 0 5em;
 }
 </style>
