@@ -2,16 +2,21 @@
 
 This branch is our release 1 of our Group Design Project, MusiCollab. MusiCollab is aimed to be a collaborative music creation website where you can create and edit projects with friends and strangers by adding tracks, manipulating their audio settings and much more! We achieved all of goal for this release and an extra feature of a working custom volume slider.
 
-# ——————————————— Setting up the Backend ——————————————————— #
+---
+
+# Setting up the Backend
+
+---
 
 Ensure that the latest version of python is installed on your device
 
 ### 1
 
-- In your terminal, starting from root directory: 
+- In your terminal, starting from root directory:
   -- Type cd backend
 
 ### 2
+
 - In the backend directory type:
   - For Windows
     -- python -m venv venv
@@ -20,7 +25,7 @@ Ensure that the latest version of python is installed on your device
 
 ### 3
 
-  # Setting up the development environment
+# Setting up the development environment
 
 - The step above creates a folder called 'venv' within the backend folder. Within the venv
   folder is a 'bin' folder, which has a file called "Activeate.ps1" inside it.
@@ -31,10 +36,7 @@ Ensure that the latest version of python is installed on your device
     - For Windows, paste this in your terminal to enter the development environment
       -- .\venv\Scripts\Activate.ps1
     - For macOS/Unix, paste this in your terminal to enter the development environment
-      -- source [Absolute (not relative) path to the 'Activate.ps1' file], minus the '.ps1' at the end
-            - should be something like "source C:\...\venv\bin\Activate"
-            - Ensure you add 'source' before the path of the 'Activate.ps1' file on macOS/Unix
-            - Ensure you delete the '.ps1' from the end of the file path for macOS/Unix
+      -- source [Absolute (not relative) path to the 'Activate.ps1' file], minus the '.ps1' at the end - should be something like "source C:\...\venv\bin\Activate" - Ensure you add 'source' before the path of the 'Activate.ps1' file on macOS/Unix - Ensure you delete the '.ps1' from the end of the file path for macOS/Unix
 
 ### 4
 
@@ -55,46 +57,50 @@ Ensure that the latest version of python is installed on your device
 - Run the application with:
   -- python app.py
 
-# Backed Code Explanation:
+# Backend Code Explanation:
 
-  This code represents a backend application developed using Flask, a popular Python web framework. It integrates   various functionalities including user management, file upload, and interaction with MongoDB. Below is a brief  explanation of the key parts of this code:
-  
-  #### Imports and Initial Setup:
-  
-  - Various libraries are imported for handling web requests, security, file management, and database interactions.
-  - A Flask application instance is created, and Flask extensions like Bcrypt for password hashing and JWTManager for   token-based authentication are initialized.
-  - CORS (Cross-Origin Resource Sharing) is enabled allowing the backend to accept requests from different origins.
-  
-  #### Configuration:
-  
-  - A secret key for JWT (JSON Web Tokens) is generated for securing token-based authentication.
-  - Environment variables are loaded (e.g., database connection strings) using dotenv.
-  - MongoDB client is set up to connect to a database, and collections and GridFSBucket for file storage are initialized.
-  
-  #### Routes and Endpoints:
-  
-  - Various endpoints are defined for different functionalities such as user registration, login, email and username  checks, file uploads (both general and specific to a user's profile picture), and project management.
-  - The /upload endpoint allows files to be uploaded and stored in MongoDB using GridFS.
-  - The /checkEmail, /checkUsername, /submit, /login, and other user-related endpoints allow for user management such as  registration, email validation, and authentication.
-  - Password validation for login uses bcrypt to securely check hashed passwords.
-  - JWT tokens are used for authentication and are required for certain actions like uploading a profile picture or   adding a project.
-  - Project and audio management is facilitated through endpoints that allow adding projects, uploading audio files to  projects, and retrieving project-related information.
-  
-  #### File Upload and Retrieval:
-  
-  - Files (like profile pictures and audio files) can be uploaded and linked to users or projects. GridFS is used for   storing files that exceed the BSON document size limit in MongoDB.
-  - File metadata is managed, and files can be retrieved via specific endpoints, allowing for dynamic content management  related to user profiles and projects.
-  
-  #### Security and Data Management:
-  
-  - jwt_required decorator is used to protect routes that require user authentication.
-  - Data validation and error handling are implemented to ensure that the backend responds appropriately to invalid   requests or database errors.
-  
-  #### Running the Application:
-  
-  Overall, this backend is designed for a platform where users can create profiles, manage projects, and upload files,  with secure authentication and data storage practices.
+This code represents a backend application developed using Flask, a popular Python web framework. It integrates various functionalities including user management, file upload, and interaction with MongoDB. Below is a brief explanation of the key parts of this code:
 
-# ——————————————— Setting up the Frontend ——————————————————— #
+#### Imports and Initial Setup:
+
+- Various libraries are imported for handling web requests, security, file management, and database interactions.
+- A Flask application instance is created, and Flask extensions like Bcrypt for password hashing and JWTManager for token-based authentication are initialized.
+- CORS (Cross-Origin Resource Sharing) is enabled allowing the backend to accept requests from different origins.
+
+#### Configuration:
+
+- A secret key for JWT (JSON Web Tokens) is generated for securing token-based authentication.
+- Environment variables are loaded (e.g., database connection strings) using dotenv.
+- MongoDB client is set up to connect to a database, and collections and GridFSBucket for file storage are initialized.
+
+#### Routes and Endpoints:
+
+- Various endpoints are defined for different functionalities such as user registration, login, email and username checks, file uploads (both general and specific to a user's profile picture), and project management.
+- The /upload endpoint allows files to be uploaded and stored in MongoDB using GridFS.
+- The /checkEmail, /checkUsername, /submit, /login, and other user-related endpoints allow for user management such as registration, email validation, and authentication.
+- Password validation for login uses bcrypt to securely check hashed passwords.
+- JWT tokens are used for authentication and are required for certain actions like uploading a profile picture or adding a project.
+- Project and audio management is facilitated through endpoints that allow adding projects, uploading audio files to projects, and retrieving project-related information.
+
+#### File Upload and Retrieval:
+
+- Files (like profile pictures and audio files) can be uploaded and linked to users or projects. GridFS is used for storing files that exceed the BSON document size limit in MongoDB.
+- File metadata is managed, and files can be retrieved via specific endpoints, allowing for dynamic content management related to user profiles and projects.
+
+#### Security and Data Management:
+
+- jwt_required decorator is used to protect routes that require user authentication.
+- Data validation and error handling are implemented to ensure that the backend responds appropriately to invalid requests or database errors.
+
+#### Running the Application:
+
+Overall, this backend is designed for a platform where users can create profiles, manage projects, and upload files, with secure authentication and data storage practices.
+
+---
+
+# Setting up the Frontend
+
+---
 
 Ensure the latest version of Node.js is installed on your device
 
@@ -105,8 +111,8 @@ Ensure the latest version of Node.js is installed on your device
 ### 2
 
 - Install npm in the directory, by pasting this in the terminal:
-  -- npm init -y 
-        THEN
+  -- npm init -y
+  THEN
   -- npm install
 
 ### 3
@@ -157,9 +163,14 @@ Ensure the latest version of Node.js is installed on your device
 - User authentication status (e.g., logged in/out) could influence navigational options and accessible content, directing users to the appropriate pages.
 - The frontend interacts with the backend for various operations, ensuring that user data and project information are up-to-date and consistent with the database.
 
-# ———————————————— To run the whole project ——————————————— #
+---
+
+# Running the whole project
+
+---
 
 - Have 2 terminals open, each starting from the project root directory:
+
   - Terminal 1:
     Run:
     cd backend
@@ -198,7 +209,7 @@ Other Notes:
 - Don't forget the '.env' file!
 - Some frontend buttons exist, such as burger menu icon (top right) or top navigation bar in the project view,
   and don't have any functionality implemented yet.
-    - These buttons were not in scope for release 1, and they are just placeholders for now.
+  - These buttons were not in scope for release 1, and they are just placeholders for now.
 - If you upload an audio file over an existing audio file in a project, it will delete/overwrite the existing/current
   audio file in the project
 - Have fun!
