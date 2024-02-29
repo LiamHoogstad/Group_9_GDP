@@ -1,0 +1,30 @@
+@import "./base.css";
+
+#app {
+  width: 100%;
+  min-height: 100vh;
+}
+*{
+  font-weight: normal;
+  margin: 0px;
+  padding: 0px;
+}
+
+body {
+  color: var(--colour-text);
+  background: var(--colour-background);
+  transition:
+    color 0.5s,
+    background-color 0.5s;
+  font-family:
+    'Segoe UI',
+    Roboto,
+    Ubuntu,
+    sans-serif;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@media (min-width: 1024px) {
+}
