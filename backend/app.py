@@ -194,6 +194,37 @@ def get_projects(user_id):
     else:
         return jsonify({"message": "User not found or no projects available"}), 404
 
+@app.route('/getAllProjects', methods=['GET'])
+def get_all_projects():
+    all_projects = []
+    # Query the database to retrieve all users and their projects
+    #all_users = users_collection.find({}, {'projects': 1}
+    print("Hi2")
+    for user in users_collection.find({}, {'projects': 1}):
+        if user:
+            print(user)
+            for project in user.get('projects', []):
+                project_modified = project.copy()
+                username = users_collection.find_one({'_id': user['_id']})
+                project_modified['user']=username.get('username')
+                if 'audioFileId' in project:
+                    project_modified['audioFileId'] = str(project['audioFileId'])
+                all_projects.append(project_modified)
+        #if user and 'projects' in user:
+            # Add projects of each user to the list of all projects
+        #   if 'audioFileId' in user['projects']:
+        #        user['projects']['audioFileId'] = str(user['projects']['audioFileId'])
+
+        #    all_projects.append(user['projects'])
+
+
+    #print("HIII")
+    #print(all_projects)
+    #print(type(all_projects))
+    if all_projects:
+        return  jsonify(all_projects), 200
+    else:
+        return jsonify({"message": "No projects available"}), 404
 
 @app.route('/uploadAudioToProject', methods=['POST'])
 @jwt_required()
