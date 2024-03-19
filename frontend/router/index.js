@@ -3,6 +3,7 @@ import ProfilePage from "../views/ProfilePage.vue";
 import SignIn from "../views/SignIn.vue";
 import SignUp from "../views/SignUp.vue";
 import LandingPage from "../views/LandingPage.vue";
+import ExplorePage from "../views/ExplorePage.vue";
 import ProjectView from "../views/ProjectView.vue"
 
 const router = createRouter({
@@ -22,6 +23,11 @@ const router = createRouter({
       path: "/sign-up",
       name: "SignUp",
       component: SignUp,
+    },
+    {
+      path: "/explore",
+      name: "ExplorePage",
+      component: ExplorePage,
     },
     {
       path: "/profile-page",

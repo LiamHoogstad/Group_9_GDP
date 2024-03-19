@@ -193,7 +193,7 @@ export default {
       <button class="close" @click="drawerVisible = false">x</button>
       <ul>
         <h1><router-link to="/">Home</router-link></h1>
-        <h1><router-link to="/">Explore</router-link></h1>
+        <h1><router-link to="/explore">Explore</router-link></h1>
         <h1><router-link to="/profile-page">Account</router-link></h1>
       </ul>
     </div>
