@@ -128,6 +128,16 @@ const fetchAudioFilename = async () => {
 };
 </script>
 
+<script>
+export default {
+  data() {
+    return {
+      drawerVisible: false,
+    };
+  },
+};
+</script>
+
 <template>
   <div class="projectPage">
     <div id="ribbon">
@@ -155,7 +165,7 @@ const fetchAudioFilename = async () => {
         />
       </div>
       <div class="right">
-        <button id="hamburger">
+        <button id="hamburger" @click="drawerVisible = true">
           <img src="@/assets/Hamburger Menu.svg" />
         </button>
       </div>
@@ -173,6 +183,19 @@ const fetchAudioFilename = async () => {
         />
       </v-btn>
       <v-btn color="success" @click="uploadAudioFile">Submit Audio</v-btn>
+    </div>
+    <div id="drawer"
+      :style="{
+        width: drawerVisible ? '25em' : '0',
+        paddingLeft: drawerVisible ? '10px' : '0',
+      }"
+    >
+      <button class="close" @click="drawerVisible = false">x</button>
+      <ul>
+        <h1><router-link to="/">Home</router-link></h1>
+        <h1><router-link to="/">Explore</router-link></h1>
+        <h1><router-link to="/profile-page">Account</router-link></h1>
+      </ul>
     </div>
   </div>
 </template>
@@ -254,6 +277,53 @@ button#hamburger {
 button#hamburger img {
   width: 2em;
   height: 2em;
+}
+
+#drawer {
+  position: absolute;
+  overflow: hidden;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 100vh;
+  border-radius: 2em 0 0 2em;
+  color: var(--colour-background);
+  background: var(--colour-interactable);
+  font-family: "Delta Gothic One";
+  transition: all 0.2s;
+}
+
+#drawer ul {
+  list-style: none;
+  text-align: center;
+  margin-top: 0.75em;
+}
+
+#drawer a:link,
+#drawer a:visited,
+#drawer a:active {
+  color: var(--colour-background);
+  text-decoration: none;
+  margin-bottom: 0.25em;
+  width: fit-content;
+}
+
+#drawer button {
+  box-shadow: none;
+}
+
+#drawer button.close {
+  font-family: "Fredoka";
+  font-size: 2.5em;
+  min-width: 0;
+  padding: 0 .5em 0 0.5em;
+}
+
+#drawer button.close:hover {
+  background: none;
+}
+#drawer button.close:active {
+  background: none;
 }
 
 #track_list .track{

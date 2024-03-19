@@ -33,3 +33,9 @@
   font-display: auto;
   src: local("Delta Gothic One"), url('/fonts/Delta_Gothic_One/DelaGothicOne-Regular.ttf') format('truetype');
 }
+
+@font-face {
+  font-family: 'Fredoka';
+  src: url('/fonts/Fredoka/static/Fredoka-Bold.ttf') format('truetype');
+  font-weight: 700;
+}
