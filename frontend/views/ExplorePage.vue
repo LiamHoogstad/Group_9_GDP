@@ -1,12 +1,31 @@
 <script>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import axios from "axios";
 
 export default {
   name: "ExplorePage",
 
   setup() {
-    return {};
+    const projects = ref([]);
+    
+    const fetchAllProjects = async () => {
+      try {
+        const response = await axios.get(
+          `http://127.0.0.1:5000/getAllProjects`
+        );
+        projects.value = response.data;
+        console.log(JSON.stringify(projects.value));
+      } catch (error) {
+        console.error("Error fetching projects:", error);
+      }
+    };
+    onMounted(() => {
+      fetchAllProjects();
+    });
+
+    return {
+      projects,
+    };
   },
 };
 </script>
@@ -15,12 +34,12 @@ export default {
   <div class="explorePage">
     <h1>Explore</h1>
     <ul>
-      <div class="track" v-for="index in 10">
+      <div class="track" v-for="project in projects">
         <div class="info">
-          <h3 class="title">{{ "Title"}}</h3>
-          <h3 class="creator">{{ "Creator"}}</h3>
+          <h3 class="title">{{ project.title}}</h3>
+          <h3 class="creator">{{project.user}}</h3>
         </div>
-        <h3 class="description">{{ "Description text lorem ipsum etc." }}</h3>
+        <h3 class="description">{{ project.description }}</h3>
         <div class="likeDislike">
           <button class="like">like {{ 0 }}</button>
           <button>dislike {{ 0 }}</button>
