@@ -11,6 +11,7 @@ from dotenv import load_dotenv
 from bson.objectid import ObjectId
 from gridfs import GridFSBucket
 from datetime import timedelta
+from pydub import AudioSegment
 from werkzeug.utils import secure_filename
 
 # Initialize Flask app
@@ -200,7 +201,7 @@ def get_projects(user_id):
 @jwt_required()
 def upload_audio_to_project():
     current_user_id = get_jwt_identity()
-    project_title = request.form['title']  
+    project_title = request.form['title']
 
     if 'file' not in request.files:
         return jsonify({'message': 'No file part'}), 400
@@ -233,7 +234,57 @@ def upload_audio_to_project():
 
     return jsonify({'message': 'User not found'}), 404
 
-@app.route('/getAudio/<user_id>/<project_title>', methods=['GET'])
+# New Audio function that loads audio from database and loads a local audio file, streaming them together.
+@app.route('/getAudio/<user_id>/<project_title>/<startPointStr>', methods=['GET'])
+def get_audio(user_id, project_title, startPointStr):
+
+    startPoint = int(startPointStr)
+
+    user = users_collection.find_one({"_id": ObjectId(user_id), "projects.title": project_title})
+    if user:
+        project = next((p for p in user.get('projects', []) if p['title'] == project_title), None)
+        if project and 'audioFileId' in project:
+            # Retrieve audio from MongoDB
+            grid_out = grid_fs_bucket.open_download_stream(ObjectId(project['audioFileId']))
+            db_audio = AudioSegment.from_file(io.BytesIO(grid_out.read()))
+
+            # Load the local file
+            # Replace path to audio file with your own path to audio file
+            local_audio_path = '/Users/liamhoogstad/Desktop/College/SWENG/Group_9_GDP/frontend/assets/Super Mario Theme.mp3'
+            local_audio = AudioSegment.from_mp3(local_audio_path)
+
+            # Adjust local audio volume to 60% of the database audio file
+            # This is a simple approximation; adjust dB reduction as needed
+            local_audio = local_audio - 25  # Reducing volume by 5 dB
+
+            # Ensure both audio segments are at the same frame rate
+            if db_audio.frame_rate != local_audio.frame_rate:
+                local_audio = local_audio.set_frame_rate(db_audio.frame_rate)
+
+            # Mix the audio files
+            mixed_audio = db_audio.overlay(local_audio, position=0)
+
+            # Trim the mixed audio to start from the specified startPoint
+            if startPoint > 0:
+                mixed_audio = mixed_audio[startPoint:]
+
+            # Convert the mixed audio to bytes for streaming
+            mixed_audio_bytes = io.BytesIO()
+            mixed_audio.export(mixed_audio_bytes, format="mp3")
+            mixed_audio_bytes.seek(0)  # Reset the pointer to the start of the bytes object
+
+            # Stream the mixed audio to the client
+            return send_file(
+                mixed_audio_bytes,
+                mimetype="audio/mp3",
+                as_attachment=True,
+                download_name="mixed_audio.mp3"
+            )
+    return jsonify({'message': 'Project or audio file not found'}), 404
+
+
+""" ------------------------- Old Audio Retrieving Function: ----------------------- """
+""" @app.route('/getAudio/<user_id>/<project_title>', methods=['GET'])
 def get_audio(user_id,project_title):
     user = users_collection.find_one({"_id": ObjectId(user_id), "projects.title": project_title})
     print(user)
@@ -246,7 +297,7 @@ def get_audio(user_id,project_title):
                 mimetype='audio/mpeg',
             )
             return response
-    return jsonify({'message': 'Project or audio file not found'}), 404
+    return jsonify({'message': 'Project or audio file not found'}), 404 """
 
 @app.route('/getAudioFilename/<user_id>/<project_title>', methods=['GET'])
 def get_audio_filename(user_id, project_title):

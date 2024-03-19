@@ -92,7 +92,7 @@ const fetchAudioFile = async () => {
     const response = await axios.get(
       `http://127.0.0.1:5000/getAudio/${userId}/${encodeURIComponent(
         title.value
-      )}`,
+      )}/10000`, /* The '5000' portion is an audio file offset of 5000 miliseconds (5 seconds) */
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
