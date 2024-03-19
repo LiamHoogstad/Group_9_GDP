@@ -175,7 +175,8 @@ def add_project():
     project = {
         'id': data.get('id'),
         'title': data.get('title'),
-        'description': data.get('description')
+        'description': data.get('description'),
+        'genre': data.get('genre'),
     }
     
     users_collection.update_one(
