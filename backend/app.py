@@ -234,7 +234,7 @@ def upload_audio_to_project():
 
     return jsonify({'message': 'User not found'}), 404
 
-# New Audio function that loads audio from database and loads a local audio file, streaming them together.
+# Loads audio from database, loads a local audio file, returns a new mixed audio file.
 @app.route('/getAudio/<user_id>/<project_title>/<startPointStr>', methods=['GET'])
 def get_audio(user_id, project_title, startPointStr):
 
@@ -244,36 +244,33 @@ def get_audio(user_id, project_title, startPointStr):
     if user:
         project = next((p for p in user.get('projects', []) if p['title'] == project_title), None)
         if project and 'audioFileId' in project:
-            # Retrieve audio from MongoDB
+
             grid_out = grid_fs_bucket.open_download_stream(ObjectId(project['audioFileId']))
             db_audio = AudioSegment.from_file(io.BytesIO(grid_out.read()))
 
             # Load the local file
-            # Replace path to audio file with your own path to audio file
+            # Replace path with your own path to audio file
             local_audio_path = '/Users/liamhoogstad/Desktop/College/SWENG/Group_9_GDP/frontend/assets/Super Mario Theme.mp3'
             local_audio = AudioSegment.from_mp3(local_audio_path)
 
-            # Adjust local audio volume to 60% of the database audio file
-            # This is a simple approximation; adjust dB reduction as needed
-            local_audio = local_audio - 25  # Reducing volume by 5 dB
+            local_audio = local_audio - 25  # Reducing volume by 25 dB (can be changed)
 
-            # Ensure both audio segments are at the same frame rate
+            # Ensure both audio segments are at same frame rate
             if db_audio.frame_rate != local_audio.frame_rate:
                 local_audio = local_audio.set_frame_rate(db_audio.frame_rate)
 
-            # Mix the audio files
+            # mix audio files
             mixed_audio = db_audio.overlay(local_audio, position=0)
 
-            # Trim the mixed audio to start from the specified startPoint
+            # Trim mixed audio to start from the specified startPoint in milliseconds
             if startPoint > 0:
                 mixed_audio = mixed_audio[startPoint:]
 
-            # Convert the mixed audio to bytes for streaming
             mixed_audio_bytes = io.BytesIO()
             mixed_audio.export(mixed_audio_bytes, format="mp3")
-            mixed_audio_bytes.seek(0)  # Reset the pointer to the start of the bytes object
+            mixed_audio_bytes.seek(0)
 
-            # Stream the mixed audio to the client
+            # Stream mixed audio to the client
             return send_file(
                 mixed_audio_bytes,
                 mimetype="audio/mp3",
