@@ -253,7 +253,7 @@ def get_audio(user_id, project_title, startPointStr):
             local_audio_path = '/Users/liamhoogstad/Desktop/College/SWENG/Group_9_GDP/frontend/assets/Super Mario Theme.mp3'
             local_audio = AudioSegment.from_mp3(local_audio_path)
 
-            local_audio = local_audio - 25  # Reducing volume by 25 dB (can be changed)
+            local_audio = local_audio - 12  # Reducing volume by 12 dB (can be changed)
 
             # Ensure both audio segments are at same frame rate
             if db_audio.frame_rate != local_audio.frame_rate:
