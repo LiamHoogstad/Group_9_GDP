@@ -36,8 +36,8 @@ export default {
     <ul>
       <div class="track" v-for="project in projects">
         <div class="info">
-          <h3 class="title">{{ project.title}}</h3>
-          <h3 class="creator">{{project.user}}</h3>
+          <h3 class="title">{{ project.title }}</h3>
+          <h3 class="creator">{{ project.user }}</h3>
         </div>
         <h3 class="description">{{ project.description }}</h3>
         <div class="likeDislike">

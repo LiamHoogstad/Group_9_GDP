@@ -151,23 +151,25 @@ export default {
         </div>
         <h2 id="project_name">{{ title }}</h2>
       </div>
-      <div class="centre">
-        <button id="play_pause" @click="togglePlay">
-          <img src="../assets/Play.svg" v-if="!isPlaying" />
-          <img src="../assets/Pause.svg" v-else />
-        </button>
-        <Slider
-          :value="volume"
-          @input="updateVolume"
-          :min="0"
-          :max="100"
-          id="master_volume"
-        />
-      </div>
       <div class="right">
         <button id="hamburger" @click="drawerVisible = true">
           <img src="@/assets/Hamburger Menu.svg" />
         </button>
+      </div>
+      <div class="centre">
+        <div id="playbackControls">
+          <button id="play_pause" @click="togglePlay">
+            <img src="../assets/Play.svg" v-if="!isPlaying" />
+            <img src="../assets/Pause.svg" v-else />
+          </button>
+          <Slider
+            :value="volume"
+            @input="updateVolume"
+            :min="0"
+            :max="100"
+            id="master_volume"
+          />
+        </div>
       </div>
     </div>
     <div class="upload-area" style="text-align: center; margin-top: 20px">
@@ -201,33 +203,35 @@ export default {
 </template>
 
 <style scoped>
+
 #ribbon {
   width: 100%;
-  height: fit-content;
   background-color: var(--colour-panel-soft);
   padding: 0.5em 0 0.5em 0;
-  text-align: center;
-  overflow: hidden;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  contain: layout;
 }
 
 #ribbon .left {
-  padding-left: 0.5em;
+  width: 33.3333%;
   text-align: left;
+  float: left;
+  overflow: hidden;
+}
+
+#ribbon .right {
+  width: 33.3333%;
+  text-align: right;
+  float: right;
 }
 
 #ribbon .centre {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  width: 15vw;
+  width: 33.333%;
+  float: left;
 }
 
 #ribbon .dropdowns span {
   font-weight: 600;
-  margin-right: 0.5em;
+  margin-left: 0.5em;
   padding: 0 0.25em 0 0.25em;
   border-radius: 0.25em;
   cursor: pointer;
@@ -239,7 +243,15 @@ export default {
 
 h2#project_name {
   font-family: "Delta Gothic One";
-  margin-left: 0.25em;
+  margin-left: 0.5em;
+}
+
+#playbackControls {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width:15vw;
+  margin: 0 auto 0 auto;
 }
 
 button {
@@ -269,6 +281,7 @@ button#play_pause img {
 
 button#hamburger {
   border-radius: 100% 0 0 100%;
+  margin: 0 0 0 auto;
   padding: 0.75em 1em 0.75em 1em;
   cursor: pointer;
   display: flex;
