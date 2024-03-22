@@ -58,12 +58,18 @@ export default {
 .explorePage {
   height: 100vh;
   text-align: center;
+}
+
+header {
   background-color: var(--colour-panel-soft);
+  padding: 0.6em 0.5em 1.15em 0.5em;
+  margin-bottom: 1em;
 }
 
 h1 {
   font-family: 'Delta Gothic One';
-  padding: 0.5em;
+  margin: 0;
+  padding: 0;
 }
 
 .track {
