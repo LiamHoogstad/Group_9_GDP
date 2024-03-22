@@ -315,6 +315,10 @@ button#hamburger img {
   background: none;
 }
 
+.v-btn {
+  margin: .5em .5em 0 .5em;
+}
+
 #track_list .track{
   margin: 1em 0 0 1em;
   padding: 1em 1em 1em 2em;
