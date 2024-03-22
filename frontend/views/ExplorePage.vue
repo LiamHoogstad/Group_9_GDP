@@ -2,11 +2,59 @@
 import { ref, computed, onMounted } from "vue";
 import axios from "axios";
 
+const audioSrc = ref("");
+const audio = new Audio();
+const isPlaying = ref(false);
+const currentProject = ref(null)
+
+
+
+audio.addEventListener("ended", () => {
+  currentProject.value = null;
+  isPlaying.value = false;
+});
+
 export default {
   name: "ExplorePage",
 
   setup() {
     const projects = ref([]);
+    const playCombinedAudio = async (username, title) => {
+      if(currentProject.value === title){
+        if(isPlaying.value){
+          audio.pause()
+        }
+        else{
+          audio.play()
+        }
+        isPlaying.value = !isPlaying.value;
+      }
+      else{
+        audio.pause();
+        isPlaying.value = false;
+        currentProject.value = null;
+        try {
+          //console.log(username, title);
+        const response = await axios.get(
+          `http://127.0.0.1:5000/explorePageAudio/${username}/${title}`,
+          {
+          responseType: "blob",
+          }
+        );
+        audioSrc.value = URL.createObjectURL(response.data);
+        audio.src = audioSrc.value;
+        audio.play()
+        isPlaying.value = true;
+        currentProject.value = title;
+
+      } catch (error) {
+        console.error("Error fetching audio file:", error);
+      }
+    }
+  };
+  const isProjectPlaying = (project) => {
+  return (currentProject.value === project) && (isPlaying.value) ;
+  };
     
     const fetchAllProjects = async () => {
       try {
@@ -25,6 +73,8 @@ export default {
 
     return {
       projects,
+      playCombinedAudio,
+      isProjectPlaying
     };
   },
 };
@@ -45,8 +95,9 @@ export default {
           <button>dislike {{ 0 }}</button>
         </div>
         <div class="audioPreview"></div>
-        <button class="play">
-          <img src="../assets/Play.svg"/>
+        <button class="play" @click="playCombinedAudio(project.user, project.title)">
+          <img src="../assets/Play.svg" v-if="!isProjectPlaying(project.title)" />
+          <img src="../assets/Pause.svg" v-else />
         </button>
       </div>
     </ul>
