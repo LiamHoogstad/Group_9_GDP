@@ -1,38 +1,39 @@
 <script>
 import { ref, computed, onMounted } from "vue";
 import axios from "axios";
+import HamburgerMenu from "../components/HamburgerMenu.vue";
 
 export default {
-  name: "ExplorePage",
-
-  setup() {
-    const projects = ref([]);
-    
-    const fetchAllProjects = async () => {
-      try {
-        const response = await axios.get(
-          `http://127.0.0.1:5000/getAllProjects`
-        );
-        projects.value = response.data;
-        console.log(JSON.stringify(projects.value));
-      } catch (error) {
-        console.error("Error fetching projects:", error);
-      }
-    };
-    onMounted(() => {
-      fetchAllProjects();
-    });
-
-    return {
-      projects,
-    };
-  },
+    name: "ExplorePage",
+    setup() {
+        const projects = ref([]);
+        const fetchAllProjects = async () => {
+            try {
+                const response = await axios.get(`http://127.0.0.1:5000/getAllProjects`);
+                projects.value = response.data;
+                console.log(JSON.stringify(projects.value));
+            }
+            catch (error) {
+                console.error("Error fetching projects:", error);
+            }
+        };
+        onMounted(() => {
+            fetchAllProjects();
+        });
+        return {
+            projects,
+        };
+    },
+    components: { HamburgerMenu }
 };
 </script>
 
 <template>
   <div class="explorePage">
-    <h1>Explore</h1>
+    <header>
+      <h1>Explore</h1>
+      <HamburgerMenu/>
+    </header>
     <ul>
       <div class="track" v-for="project in projects">
         <div class="info">

@@ -2,6 +2,7 @@
 import { ref, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import Slider from "../components/Slider.vue";
+import HamburgerMenu from "../components/HamburgerMenu.vue";
 import axios from "axios";
 
 const router = useRouter();
@@ -128,16 +129,6 @@ const fetchAudioFilename = async () => {
 };
 </script>
 
-<script>
-export default {
-  data() {
-    return {
-      drawerVisible: false,
-    };
-  },
-};
-</script>
-
 <template>
   <div class="projectPage">
     <div id="ribbon">
@@ -152,9 +143,7 @@ export default {
         <h2 id="project_name">{{ title }}</h2>
       </div>
       <div class="right">
-        <button id="hamburger" @click="drawerVisible = true">
-          <img src="@/assets/Hamburger Menu.svg" />
-        </button>
+        <HamburgerMenu/>
       </div>
       <div class="centre">
         <div id="playbackControls">
@@ -185,19 +174,6 @@ export default {
         />
       </v-btn>
       <v-btn color="success" @click="uploadAudioFile">Submit Audio</v-btn>
-    </div>
-    <div id="drawer"
-      :style="{
-        width: drawerVisible ? '25em' : '0',
-        paddingLeft: drawerVisible ? '10px' : '0',
-      }"
-    >
-      <button class="close" @click="drawerVisible = false">x</button>
-      <ul>
-        <h1><router-link to="/">Home</router-link></h1>
-        <h1><router-link to="/explore">Explore</router-link></h1>
-        <h1><router-link to="/profile-page">Account</router-link></h1>
-      </ul>
     </div>
   </div>
 </template>
