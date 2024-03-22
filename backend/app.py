@@ -4,14 +4,16 @@ import binascii
 from flask import Flask, request, jsonify, send_file
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 from pymongo import MongoClient
 from pymongo.server_api import ServerApi
 from dotenv import load_dotenv
 from bson.objectid import ObjectId
-from gridfs import GridFSBucket
+from gridfs import GridFSBucket, NoFile
 from datetime import timedelta
 from werkzeug.utils import secure_filename
+import datetime
+from pydub import AudioSegment
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -40,11 +42,11 @@ db = client.MusiCollab
 users_collection = db.users 
 grid_fs_bucket = GridFSBucket(db)
 
+
 # Routes
 @app.route('/')
 def hello_world():
     return 'Hello, World!'
-
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
@@ -100,6 +102,13 @@ def submit_form():
     password = bcrypt.generate_password_hash(data.get('password').encode("utf-8")).decode('utf-8')
     username = data.get('username')
     dob = data.get('dateOfBirth')
+    if isinstance(dob, str):
+        try:
+            dob = datetime.fromisoformat(dob)
+        except ValueError:
+            return jsonify({"error": "Invalid date format"}), 400
+    if isinstance(dob, datetime):
+        dob = dob.isoformat()
     user_data = {'email': email, 'username': username, 'password': password, 'dateOfBirth': dob, 'profilePicture': None, 'projects': []}
     result = users_collection.insert_one(user_data)
     user = users_collection.find_one({'email': email})
@@ -160,12 +169,28 @@ def fetch_Username(user_id):
     if user:
         projects_serializable = []
         for project in user.get('projects', []):
-            project_modified = project.copy()
-            if 'audioFileId' in project:
-                project_modified['audioFileId'] = str(project['audioFileId'])
+            # Shallow copy of the project dictionary and ensure all ObjectIds are strings
+            project_modified = {
+                **project,
+                'id': str(project['id']),  # Convert project id if it's an ObjectId
+                'audioFiles': [
+                    {
+                        **audio_file,
+                        'audioFileId': str(audio_file['audioFileId'])  # Convert audio file ids
+                    } for audio_file in project.get('audioFiles', [])
+                ],
+            }
+
+            # Convert combinedAudioId if it exists
+            if 'combinedAudioId' in project:
+                project_modified['combinedAudioId'] = str(project['combinedAudioId'])
+
             projects_serializable.append(project_modified)
 
-    return jsonify(username=user.get('username'), projects=projects_serializable), 200
+        # User username and projects are now ready for JSON serialization
+        return jsonify(username=user.get('username'), projects=projects_serializable), 200
+    else:
+        return jsonify({'message': 'User not found'}), 404
 
 @app.route('/addProject', methods=['POST'])
 @jwt_required()
@@ -187,7 +212,6 @@ def add_project():
 
 @app.route('/getProjects/<user_id>', methods=['GET'])
 def get_projects(user_id):
-    print("SMELLY BUM BUM")
     user = users_collection.find_one({"_id": ObjectId(user_id)}, {'projects': 1})
     if user and 'projects' in user:
         return jsonify(user['projects']), 200
@@ -226,42 +250,45 @@ def get_all_projects():
     else:
         return jsonify({"message": "No projects available"}), 404
 
-@app.route('/uploadAudioToProject', methods=['POST'])
+@app.route('/uploadAudioToProject/<user_id>/<project_title>/<index>', methods=['POST'])
 @jwt_required()
-def upload_audio_to_project():
+def upload_audio_to_project(user_id, project_title, index):
     current_user_id = get_jwt_identity()
-    project_title = request.form['title']  
+    if str(current_user_id) != str(user_id):
+        return jsonify({'message': 'Unauthorized'}), 403
 
     if 'file' not in request.files:
         return jsonify({'message': 'No file part'}), 400
-
     file = request.files['file']
     if file.filename == '':
         return jsonify({'message': 'No selected file'}), 400
 
-    user = users_collection.find_one({"_id": ObjectId(current_user_id)})
-    if user:
-        filename = secure_filename(file.filename)
-        content_type = file.content_type
+    try:
+        index = int(index)  # Ensure index is an integer
+    except ValueError:
+        return jsonify({'message': 'Invalid index provided'}), 400
 
-        project = next((project for project in user.get('projects', []) if project['title'] == project_title), None)
-        if project and 'audioFileId' in project:
-            old_file_id = project['audioFileId']
-            grid_fs_bucket.delete(ObjectId(old_file_id))
+    user = users_collection.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        return jsonify({'message': 'User not found'}), 404
 
-        file_id = grid_fs_bucket.upload_from_stream(filename, file, metadata={"content_type": content_type, "user_id": current_user_id})
+    filename = secure_filename(file.filename)
+    content_type = file.content_type
 
-        result = users_collection.update_one(
-            {'_id': ObjectId(current_user_id), 'projects.title': project_title},
-            {'$set': {'projects.$.audioFilename': filename, 'projects.$.audioFileId': file_id}}
+    project = next((project for project in user.get('projects', []) if project['title'] == project_title), None)
+    if project is None:
+        return jsonify({'message': 'Project not found'}), 404
+
+    if index < len(project.get('audioFiles', [])):
+        file_id = grid_fs_bucket.upload_from_stream(filename, file, metadata={"content_type": content_type, "user_id": user_id})
+        audio_file_data = {'audioFileId': file_id, 'audioFilename': filename}
+        users_collection.update_one(
+            {'_id': ObjectId(user_id), 'projects.title': project_title},
+            {'$set': {f'projects.$.audioFiles.{index}': audio_file_data}}
         )
-
-        if result.modified_count:
-            return jsonify({'message': 'Audio file uploaded and linked to project', 'file_id': str(file_id)}), 200
-        else:
-            return jsonify({'message': 'Project not found or update failed'}), 400
-
-    return jsonify({'message': 'User not found'}), 404
+        return jsonify({'message': 'Audio file uploaded and linked to project', 'file_id': str(file_id)}), 200
+    else:
+        return jsonify({'message': 'Index out of bounds'}), 400
 
 @app.route('/getAudio/<user_id>/<project_title>', methods=['GET'])
 def get_audio(user_id,project_title):
@@ -286,6 +313,178 @@ def get_audio_filename(user_id, project_title):
         if project and 'audioFilename' in project:
             return jsonify({'audioFilename': project['audioFilename']})
     return jsonify({'message': 'Project or audio filename not found'}), 404
+
+# @app.route('/getAudios/<user_id>/<project_title>', methods=['GET'])
+# def get_audios(user_id, project_title):
+#     user = users_collection.find_one({"_id": ObjectId(user_id), "projects.title": project_title})
+#     if user:
+#         project = next((p for p in user.get('projects', []) if p['title'] == project_title), None)
+#         if project and 'audioFiles' in project:
+#             audio_files_info = [
+#                 {
+#                     'filename': audio['audioFilename'],
+#                     'fileId': str(audio['audioFileId'])
+#                 } for audio in project.get('audioFiles', [])
+#             ]
+#             return jsonify(audio_files_info)
+#     return jsonify({'message': 'Project or audio files not found'}), 404
+
+@app.route('/getAudios/<user_id>/<project_title>', methods=['GET'])
+def get_audios(user_id, project_title):
+    user = users_collection.find_one({"_id": ObjectId(user_id)})
+    if user:
+        project_title_decoded = project_title  # Assuming project_title is URL decoded automatically by Flask
+        project = next((project for project in user.get('projects', []) if project['title'] == project_title_decoded), None)
+        if project:
+            audio_files_serializable = []
+            if 'audioFiles' in project:
+                for audio_file in project['audioFiles']:
+                    audio_file_copy = audio_file.copy()  # Shallow copy
+                    # Convert ObjectId to string for 'audioFileId'
+                    if 'audioFileId' in audio_file_copy and isinstance(audio_file_copy['audioFileId'], ObjectId):
+                        audio_file_copy['audioFileId'] = str(audio_file_copy['audioFileId'])
+                    audio_files_serializable.append(audio_file_copy)
+            
+            return jsonify(audio_files_serializable), 200
+        else:
+            return jsonify({'message': 'Project not found'}), 404
+    return jsonify({'message': 'User not found'}), 404
+    
+@app.route('/streamAudio/<file_id>', methods=['GET'])
+def stream_audio(file_id):
+    try:
+        file = grid_fs_bucket.open_download_stream(ObjectId(file_id))
+        return send_file(
+            io.BytesIO(file.read()),
+            mimetype='audio/mpeg',
+            as_attachment=False,
+            download_name=file.filename
+        )
+    except NoFile:
+        return jsonify({'message': 'File not found'}), 404
+
+@app.route('/streamProjectCombinedAudio/<user_id>/<project_title>', methods=['GET'])
+def stream_project_combined_audio(user_id, project_title):
+    try:
+        user = users_collection.find_one({"_id": ObjectId(user_id)})
+        project_title_decoded = project_title.replace("%20", " ")
+        project = next((p for p in user.get('projects', []) if p['title'] == project_title_decoded), None)
+        if project and 'combinedAudioId' in project:
+            combined_audio_id = project['combinedAudioId']
+            file = grid_fs_bucket.open_download_stream(ObjectId(combined_audio_id))
+            return send_file(
+                io.BytesIO(file.read()),
+                mimetype='audio/mpeg',
+                as_attachment=False
+            )
+        else:
+            return jsonify({'message': 'Project or combined audio not found'}), 404
+    except Exception as e:
+        return jsonify({'message': 'Error streaming combined audio: ' + str(e)}), 500
+
+@app.route('/streamProjectAudios/<user_id>/<project_title>', methods=['GET'])
+def stream_project_audios(user_id, project_title):
+    print("FARTS")
+    user = users_collection.find_one({"_id": ObjectId(user_id)})
+    if user:
+        project_title_decoded = project_title.replace("%20", " ")
+        project = next((p for p in user.get('projects', []) if p['title'] == project_title_decoded), None)
+
+        if project:
+            combined_audio = AudioSegment.silent(duration=300000) 
+            for audio_file in project.get('audioFiles', []):
+                print("I am being run")
+                file_id = audio_file.get('audioFileId')
+                if file_id:
+                    try:
+                        grid_out = grid_fs_bucket.open_download_stream(ObjectId(file_id))
+                        audio_segment = AudioSegment.from_file(io.BytesIO(grid_out.read()), format="mp3")
+                        combined_audio = combined_audio.overlay(audio_segment)
+                    except Exception as e:
+                        print(f"Error processing file {file_id}: {e}")
+                        continue
+
+            buffer = io.BytesIO()
+            combined_audio.export(buffer, format="mp3")
+            buffer.seek(0)
+            
+            if 'combinedAudioId' in project:
+                try:
+                    grid_fs_bucket.delete(ObjectId(project['combinedAudioId']))
+                except Exception as e:
+                    print(f"Error deleting old combined audio file: {e}")
+            
+            new_file_id = grid_fs_bucket.upload_from_stream(f"{project_title}_combined.mp3", buffer)
+
+            users_collection.update_one(
+                {'_id': ObjectId(user_id), 'projects.title': project_title_decoded},
+                {'$set': {'projects.$.combinedAudioId': new_file_id}}
+            )
+
+            buffer.seek(0)
+            return send_file(
+                buffer,
+                mimetype='audio/mpeg',
+                download_name=f"{project_title}_combined.mp3"
+            )
+        else:
+            return jsonify({'message': 'Project not found'}), 404
+    return jsonify({'message': 'User not found'}), 404
+
+
+@app.route('/deleteAudio/<user_id>/<audio_file_id>', methods=['DELETE'])
+def delete_audio(user_id, audio_file_id):
+    try:
+        # Convert audio_file_id to ObjectId for MongoDB operations
+        audio_file_object_id = ObjectId(audio_file_id)
+
+        # Attempt to fetch one file to check its existence
+        try:
+            next_file = next(grid_fs_bucket.find({'_id': audio_file_object_id}), None)
+            if next_file is None:
+                return jsonify({'message': 'Audio file not found'}), 404
+        except StopIteration:
+            return jsonify({'message': 'Audio file not found'}), 404
+        
+        # Delete the file from GridFS
+        grid_fs_bucket.delete(audio_file_object_id)
+        
+        # Remove the reference from the user's project
+        result = users_collection.update_one(
+            {'_id': ObjectId(user_id), 'projects.audioFiles.audioFileId': audio_file_object_id},
+            {'$pull': {'projects.$.audioFiles': {'audioFileId': audio_file_object_id}}}
+        )
+
+        if result.modified_count > 0:
+            return jsonify({'message': 'Audio file deleted successfully'}), 200
+        else:
+            return jsonify({'message': 'Audio file reference not found or could not be deleted from project'}), 404
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return jsonify({'message': 'An error occurred while deleting the audio file'}), 500
+
+@app.route('/deleteProject/<user_id>/<project_title>', methods=['DELETE'])
+def delete_project(user_id, project_title):
+    user = users_collection.find_one({"_id": ObjectId(user_id)})
+    if user:
+        project_title_decoded = project_title  
+        project = next((project for project in user.get('projects', []) if project['title'] == project_title_decoded), None)
+
+        if project:
+            # Delete associated audio files from GridFS
+            if 'audioFiles' in project:
+                for audio_file in project['audioFiles']:
+                    if 'audioFileId' in audio_file:
+                        grid_fs_bucket.delete(audio_file['audioFileId'])
+
+            # Now, delete the project itself from the user's document
+            users_collection.update_one({'_id': ObjectId(user_id)}, {'$pull': {'projects': {'title': project_title_decoded}}})
+
+            return jsonify({'message': 'Project and associated audio files deleted successfully'}), 200
+        else:
+            return jsonify({'message': 'Project not found'}), 404
+    else:
+        return jsonify({'message': 'User not found'}), 404
 
 if __name__ == '__main__':
     app.run(debug=True)

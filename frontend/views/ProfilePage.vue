@@ -43,9 +43,7 @@ export default {
     };
     const fetchUsername = async () => {
       const accessToken = localStorage.getItem("userToken");
-      console.log(accessToken);
       const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
-      console.log(userId);
       if (accessToken) {
         try {
           const response = await axios.get(
@@ -145,6 +143,37 @@ export default {
       }
     };
 
+    const deleteProject = async (project) => {
+      // Confirm deletion
+      if (
+        !confirm(
+          `Are you sure you want to delete the project "${project.title}"?`
+        )
+      ) {
+        return;
+      }
+      const accessToken = localStorage.getItem("userToken");
+      const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+
+      try {
+        // Use encodeURIComponent to safely encode the project title in the URL
+        await axios.delete(
+          `http://127.0.0.1:5000/deleteProject/${userId}/${encodeURIComponent(
+            project.title
+          )}`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+        console.log("Project deleted successfully");
+        await fetchUsername();
+      } catch (error) {
+        console.error("Error deleting the project:", error.response.data);
+      }
+    };
+
     return {
       username,
       projects,
@@ -160,6 +189,7 @@ export default {
       clickProject,
       addProjectToDB,
       fetchUsername,
+      deleteProject,
     };
   },
 };
@@ -223,6 +253,7 @@ export default {
         >
           <h3>{{ project.title }}</h3>
           <p>{{ project.description }}</p>
+          <button @click.stop="deleteProject(project)">Delete</button>
         </div>
         <div class="project addProject" @click="showAddProjectPopup = true">
           <h3>
