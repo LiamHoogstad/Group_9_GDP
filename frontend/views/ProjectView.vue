@@ -6,39 +6,46 @@ import axios from "axios";
 
 const router = useRouter();
 const title = ref(router.currentRoute.value.params.title);
-const showAddAudioPopup = ref(false);
 const audioFiles = ref([]);
 const volume = ref(100);
 const isPlaying = ref(false);
-
 const audioSrc = ref("");
+const combinedAudioReady = ref(false);
+const isLoadingAudio = ref(true);
 
 watch(
   audioFiles,
-  async () => {
-    console.log("Audio files have changed. Streaming all audio files again...");
-    await delay(10000);
-    await streamAllAudioFiles();
+  async (newVal, oldVal) => {
+    if (newVal.length > 0 && newVal !== oldVal) {
+      console.log(
+        "Audio files have changed. Streaming all audio files again..."
+      );
+      await streamAllAudioFiles();
+    }
   },
   { deep: true }
 );
 
 const togglePlay = async () => {
   const audioPlayer = document.getElementById("projectAudio");
-  if (!audioSrc.value) {
-    console.log("Setting audio source...");
-    const accessToken = localStorage.getItem("userToken");
-    const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
-    audioSrc.value = `http://127.0.0.1:5000/streamProjectCombinedAudio/${userId}/${encodeURIComponent(
-      title.value
-    )}`;
+
+  if (isLoadingAudio.value) {
+    console.log("Audio is still loading...");
+    return;
   }
 
-  if (audioPlayer.src !== audioSrc.value) {
-    audioPlayer.src = audioSrc.value;
+  if (!combinedAudioReady.value) {
+    console.log("Combined audio is not ready yet. Trying to prepare it...");
+    await streamAllAudioFiles();
   }
 
-  if (!isPlaying.value) {
+  if (audioPlayer.src !== audioSrc.value || !isPlaying.value) {
+    if (audioPlayer.src !== audioSrc.value) {
+      console.log("Setting new audio source.");
+      audioPlayer.src = audioSrc.value;
+      audioPlayer.load();
+    }
+
     try {
       await audioPlayer.play();
       isPlaying.value = true;
@@ -51,35 +58,62 @@ const togglePlay = async () => {
   }
 };
 
-function delay(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
 onMounted(async () => {
   await fetchAudioFiles();
-  //await streamAllAudioFiles();
 });
 
 async function streamAllAudioFiles() {
+  isLoadingAudio.value = true;
+
+  const audioPlayer = document.getElementById("projectAudio");
+  if (isPlaying.value) {
+    audioPlayer.pause();
+    isPlaying.value = false;
+  }
+
   const accessToken = localStorage.getItem("userToken");
   const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
 
   try {
-    console.log("TESTING FARTS");
-    const streamUrl = `http://127.0.0.1:5000/streamProjectAudios/${userId}/${encodeURIComponent(
+    console.log("Combining all audio files in the backend...");
+    const response = await axios.get(
+      `http://127.0.0.1:5000/streamProjectAudios/${userId}/${encodeURIComponent(
+        title.value
+      )}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    console.log("Audio files combined successfully: ");
+
+    const combinedAudioUrl = `http://127.0.0.1:5000/streamProjectCombinedAudio/${userId}/${encodeURIComponent(
       title.value
     )}`;
-    audioSrc.value = streamUrl;
-    const audioPlayer = document.getElementById("projectAudio");
-    audioPlayer.src = audioSrc.value;
-    audioPlayer.load();
-    audioPlayer.onloadeddata = () => {};
+    audioSrc.value = combinedAudioUrl + "?v=" + new Date().getTime(); // Adding a timestamp to prevent caching
+
+    await new Promise((resolve, reject) => {
+      const audioPlayer = document.getElementById("projectAudio");
+      audioPlayer.src = audioSrc.value; // Use the updated src with the timestamp
+
+      audioPlayer.onloadeddata = () => {
+        console.log("Audio data has loaded and is now ready to play");
+        isLoadingAudio.value = false;
+        resolve();
+      };
+
+      audioPlayer.onerror = () => {
+        console.error("Error loading combined audio");
+        reject("Error loading audio");
+      };
+
+      audioPlayer.load();
+    });
+
+    combinedAudioReady.value = true;
   } catch (error) {
-    console.error("Error streaming combined audio files:", error);
+    console.error("Error combining or streaming audio files:", error);
   }
 }
 
-const fetchAudioFiles = async () => {
+async function fetchAudioFiles() {
   const accessToken = localStorage.getItem("userToken");
   const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
 
@@ -98,11 +132,12 @@ const fetchAudioFiles = async () => {
       ...file,
       src: `http://127.0.0.1:5000/streamAudio/${file.audioFileId}`,
     }));
-    //await streamAllAudioFiles();
+    console.log("Audio files have been fetched and processed");
+    console.log(audioFiles);
   } catch (error) {
     console.error("Error fetching audio files:", error);
   }
-};
+}
 
 function updateVolume(newVolume) {
   const volumeValue = newVolume / 100;
@@ -127,6 +162,7 @@ const updateFile = async (index, event) => {
     const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
 
     try {
+      console.log("Uploading file...");
       const response = await axios.post(
         `http://127.0.0.1:5000/uploadAudioToProject/${userId}/${encodeURIComponent(
           title.value
@@ -139,16 +175,28 @@ const updateFile = async (index, event) => {
           },
         }
       );
-      console.log(response.data.message);
+      console.log("Upload response:", response.data.message);
+
+      // Only fetch new audio files list and stream all audio files if the upload was successful
       await fetchAudioFiles();
     } catch (error) {
-      console.error("Error uploading file:", error.response.data);
+      console.error(
+        "Error uploading file:",
+        error.response ? error.response.data : error
+      );
     }
   }
-  //await streamAllAudioFiles();
 };
 
 const deleteAudioFile = async (index) => {
+  isLoadingAudio.value = true;
+
+  const audioPlayer = document.getElementById("projectAudio");
+  if (isPlaying.value) {
+    audioPlayer.pause();
+    isPlaying.value = false;
+  }
+
   const fileToDelete = audioFiles.value[index];
   if (!fileToDelete || !fileToDelete.audioFileId) {
     console.error("File data is missing.");
@@ -159,6 +207,7 @@ const deleteAudioFile = async (index) => {
   const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
 
   try {
+    console.log("Deleting file...");
     await axios.delete(
       `http://127.0.0.1:5000/deleteAudio/${userId}/${fileToDelete.audioFileId}`,
       {
@@ -168,11 +217,15 @@ const deleteAudioFile = async (index) => {
       }
     );
     console.log("File deleted successfully");
-    audioFiles.value.splice(index, 1); // Remove the file from UI list
+    audioFiles.value.splice(index, 1);
+
+    isLoadingAudio.value = false;
     await fetchAudioFiles();
-    //await streamAllAudioFiles();
   } catch (error) {
-    console.error("Error deleting the file:", error.response.data);
+    console.error(
+      "Error deleting the file:",
+      error.response ? error.response.data : error
+    );
   }
 };
 </script>
@@ -182,7 +235,6 @@ export default {
   data() {
     return {
       drawerVisible: false,
-      audioFiles: [],
     };
   },
 };
@@ -202,16 +254,17 @@ export default {
         <h2 id="project_name">{{ title }}</h2>
       </div>
       <div class="centre">
-        <button id="play_pause" @click="togglePlay">
+        <p v-if="isLoadingAudio">Loading...</p>
+        <button v-else id="play_pause" @click="togglePlay">
           <img src="../assets/Play.svg" v-if="!isPlaying" />
-          <img src="../assets/Pause.svg" v-else /></button
-        ><Slider
+          <img src="../assets/Pause.svg" v-else />
+        </button>
+        <Slider
           :value="volume"
           @update:modelValue="updateVolume"
           :min="0"
           :max="100"
         />
-
         <audio id="projectAudio" controls style="display: none"></audio>
       </div>
       <div class="right">

@@ -212,4 +212,6 @@ Other Notes:
   - These buttons were not in scope for release 1, and they are just placeholders for now.
 - If you upload an audio file over an existing audio file in a project, it will delete/overwrite the existing/current
   audio file in the project
+- In order to run this project you need to have ffmpeg installed on your device. Follow these simple few steps to get that set up.
+  https://phoenixnap.com/kb/ffmpeg-windows
 - Have fun!

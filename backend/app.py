@@ -223,7 +223,6 @@ def get_all_projects():
     all_projects = []
     # Query the database to retrieve all users and their projects
     #all_users = users_collection.find({}, {'projects': 1}
-    print("Hi2")
     for user in users_collection.find({}, {'projects': 1}):
         if user:
             print(user)
@@ -264,7 +263,7 @@ def upload_audio_to_project(user_id, project_title, index):
         return jsonify({'message': 'No selected file'}), 400
 
     try:
-        index = int(index)  # Ensure index is an integer
+        index = int(index)  # Convert index to integer
     except ValueError:
         return jsonify({'message': 'Invalid index provided'}), 400
 
@@ -272,28 +271,41 @@ def upload_audio_to_project(user_id, project_title, index):
     if not user:
         return jsonify({'message': 'User not found'}), 404
 
-    filename = secure_filename(file.filename)
-    content_type = file.content_type
-
-    project = next((project for project in user.get('projects', []) if project['title'] == project_title), None)
+    project = next((p for p in user.get('projects', []) if p['title'] == project_title), None)
     if project is None:
         return jsonify({'message': 'Project not found'}), 404
 
-    if index < len(project.get('audioFiles', [])):
-        file_id = grid_fs_bucket.upload_from_stream(filename, file, metadata={"content_type": content_type, "user_id": user_id})
-        audio_file_data = {'audioFileId': file_id, 'audioFilename': filename}
+    filename = secure_filename(file.filename)
+    content_type = file.content_type
+
+    # Replace or add new audio file
+    if 0 <= index < len(project.get('audioFiles', [])):
+        # Remove existing audio file from GridFS
+        old_file_id = project['audioFiles'][index].get('audioFileId')
+        if old_file_id:
+            grid_fs_bucket.delete(ObjectId(old_file_id))
+
+        # Upload new audio file to GridFS
+        new_file_id = grid_fs_bucket.upload_from_stream(filename, file, metadata={"content_type": content_type, "user_id": user_id})
+
+        # Update project document with new audio file ID
         users_collection.update_one(
             {'_id': ObjectId(user_id), 'projects.title': project_title},
-            {'$set': {f'projects.$.audioFiles.{index}': audio_file_data}}
+            {'$set': {f'projects.$.audioFiles.{index}': {'audioFileId': new_file_id, 'audioFilename': filename}}}
         )
-        return jsonify({'message': 'Audio file uploaded and linked to project', 'file_id': str(file_id)}), 200
+        return jsonify({'message': 'Audio file replaced and linked to project', 'file_id': str(new_file_id)}), 200
     else:
-        return jsonify({'message': 'Index out of bounds'}), 400
-
+        # Append new audio file if index is at the end of the list
+        new_file_id = grid_fs_bucket.upload_from_stream(filename, file, metadata={"content_type": content_type, "user_id": user_id})
+        users_collection.update_one(
+            {'_id': ObjectId(user_id), 'projects.title': project_title},
+            {'$push': {f'projects.$.audioFiles': {'audioFileId': new_file_id, 'audioFilename': filename}}}
+        )
+        return jsonify({'message': 'Audio file added and linked to project', 'file_id': str(new_file_id)}), 200
+    
 @app.route('/getAudio/<user_id>/<project_title>', methods=['GET'])
 def get_audio(user_id,project_title):
     user = users_collection.find_one({"_id": ObjectId(user_id), "projects.title": project_title})
-    print(user)
     if user:
         project = next((p for p in user.get('projects', []) if p['title'] == project_title), None)
         if project and 'audioFileId' in project:
@@ -384,48 +396,52 @@ def stream_project_combined_audio(user_id, project_title):
 
 @app.route('/streamProjectAudios/<user_id>/<project_title>', methods=['GET'])
 def stream_project_audios(user_id, project_title):
-    print("FARTS")
+    print("Processing combined audio files...")
     user = users_collection.find_one({"_id": ObjectId(user_id)})
     if user:
         project_title_decoded = project_title.replace("%20", " ")
-        project = next((p for p in user.get('projects', []) if p['title'] == project_title_decoded), None)
+        project = next((proj for proj in user.get('projects', []) if proj['title'] == project_title_decoded), None)
 
         if project:
-            combined_audio = AudioSegment.silent(duration=300000) 
+            # Check and delete old combined audio if exists
+            if 'combinedAudioId' in project:
+                try:
+                    old_file_id = ObjectId(project['combinedAudioId'])
+                    grid_fs_bucket.delete(old_file_id)
+                    print(f"Deleted old combined audio file: {project['combinedAudioId']}")
+                except Exception as e:
+                    print(f"Error deleting old combined audio file: {e}")
+            
+            # Combine new audio files
+            combined_audio = AudioSegment.silent(duration=300000)
             for audio_file in project.get('audioFiles', []):
-                print("I am being run")
-                file_id = audio_file.get('audioFileId')
-                if file_id:
+                if 'audioFileId' in audio_file:
                     try:
-                        grid_out = grid_fs_bucket.open_download_stream(ObjectId(file_id))
+                        file_id = ObjectId(audio_file['audioFileId'])
+                        grid_out = grid_fs_bucket.open_download_stream(file_id)
                         audio_segment = AudioSegment.from_file(io.BytesIO(grid_out.read()), format="mp3")
                         combined_audio = combined_audio.overlay(audio_segment)
                     except Exception as e:
-                        print(f"Error processing file {file_id}: {e}")
+                        print(f"Error processing file {audio_file['audioFileId']}: {e}")
                         continue
 
             buffer = io.BytesIO()
             combined_audio.export(buffer, format="mp3")
             buffer.seek(0)
-            
-            if 'combinedAudioId' in project:
-                try:
-                    grid_fs_bucket.delete(ObjectId(project['combinedAudioId']))
-                except Exception as e:
-                    print(f"Error deleting old combined audio file: {e}")
-            
-            new_file_id = grid_fs_bucket.upload_from_stream(f"{project_title}_combined.mp3", buffer)
+            new_file_id = grid_fs_bucket.upload_from_stream(f"{project_title}_combined.mp3", buffer, metadata={"project_title": project_title, "user_id": user_id})
 
+            # Update project with new combinedAudioId
             users_collection.update_one(
                 {'_id': ObjectId(user_id), 'projects.title': project_title_decoded},
                 {'$set': {'projects.$.combinedAudioId': new_file_id}}
             )
+            print(f"Updated project with new combined audio ID: {new_file_id}")
 
             buffer.seek(0)
             return send_file(
                 buffer,
                 mimetype='audio/mpeg',
-                download_name=f"{project_title}_combined.mp3"
+                download_name=f"{project_title}_combined.mp3"  # Corrected from 'attachment_filename' to 'download_name'
             )
         else:
             return jsonify({'message': 'Project not found'}), 404
