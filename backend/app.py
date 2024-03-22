@@ -326,33 +326,17 @@ def get_audio_filename(user_id, project_title):
             return jsonify({'audioFilename': project['audioFilename']})
     return jsonify({'message': 'Project or audio filename not found'}), 404
 
-# @app.route('/getAudios/<user_id>/<project_title>', methods=['GET'])
-# def get_audios(user_id, project_title):
-#     user = users_collection.find_one({"_id": ObjectId(user_id), "projects.title": project_title})
-#     if user:
-#         project = next((p for p in user.get('projects', []) if p['title'] == project_title), None)
-#         if project and 'audioFiles' in project:
-#             audio_files_info = [
-#                 {
-#                     'filename': audio['audioFilename'],
-#                     'fileId': str(audio['audioFileId'])
-#                 } for audio in project.get('audioFiles', [])
-#             ]
-#             return jsonify(audio_files_info)
-#     return jsonify({'message': 'Project or audio files not found'}), 404
-
 @app.route('/getAudios/<user_id>/<project_title>', methods=['GET'])
 def get_audios(user_id, project_title):
     user = users_collection.find_one({"_id": ObjectId(user_id)})
     if user:
-        project_title_decoded = project_title  # Assuming project_title is URL decoded automatically by Flask
+        project_title_decoded = project_title  
         project = next((project for project in user.get('projects', []) if project['title'] == project_title_decoded), None)
         if project:
             audio_files_serializable = []
             if 'audioFiles' in project:
                 for audio_file in project['audioFiles']:
-                    audio_file_copy = audio_file.copy()  # Shallow copy
-                    # Convert ObjectId to string for 'audioFileId'
+                    audio_file_copy = audio_file.copy()  
                     if 'audioFileId' in audio_file_copy and isinstance(audio_file_copy['audioFileId'], ObjectId):
                         audio_file_copy['audioFileId'] = str(audio_file_copy['audioFileId'])
                     audio_files_serializable.append(audio_file_copy)
@@ -403,7 +387,6 @@ def stream_project_audios(user_id, project_title):
         project = next((proj for proj in user.get('projects', []) if proj['title'] == project_title_decoded), None)
 
         if project:
-            # Check and delete old combined audio if exists
             if 'combinedAudioId' in project:
                 try:
                     old_file_id = ObjectId(project['combinedAudioId'])
@@ -412,7 +395,6 @@ def stream_project_audios(user_id, project_title):
                 except Exception as e:
                     print(f"Error deleting old combined audio file: {e}")
             
-            # Combine new audio files
             combined_audio = AudioSegment.silent(duration=300000)
             for audio_file in project.get('audioFiles', []):
                 if 'audioFileId' in audio_file:
@@ -430,7 +412,6 @@ def stream_project_audios(user_id, project_title):
             buffer.seek(0)
             new_file_id = grid_fs_bucket.upload_from_stream(f"{project_title}_combined.mp3", buffer, metadata={"project_title": project_title, "user_id": user_id})
 
-            # Update project with new combinedAudioId
             users_collection.update_one(
                 {'_id': ObjectId(user_id), 'projects.title': project_title_decoded},
                 {'$set': {'projects.$.combinedAudioId': new_file_id}}
@@ -441,7 +422,7 @@ def stream_project_audios(user_id, project_title):
             return send_file(
                 buffer,
                 mimetype='audio/mpeg',
-                download_name=f"{project_title}_combined.mp3"  # Corrected from 'attachment_filename' to 'download_name'
+                download_name=f"{project_title}_combined.mp3"  
             )
         else:
             return jsonify({'message': 'Project not found'}), 404
@@ -454,7 +435,6 @@ def delete_audio(user_id, audio_file_id):
         # Convert audio_file_id to ObjectId for MongoDB operations
         audio_file_object_id = ObjectId(audio_file_id)
 
-        # Attempt to fetch one file to check its existence
         try:
             next_file = next(grid_fs_bucket.find({'_id': audio_file_object_id}), None)
             if next_file is None:
@@ -462,10 +442,8 @@ def delete_audio(user_id, audio_file_id):
         except StopIteration:
             return jsonify({'message': 'Audio file not found'}), 404
         
-        # Delete the file from GridFS
         grid_fs_bucket.delete(audio_file_object_id)
         
-        # Remove the reference from the user's project
         result = users_collection.update_one(
             {'_id': ObjectId(user_id), 'projects.audioFiles.audioFileId': audio_file_object_id},
             {'$pull': {'projects.$.audioFiles': {'audioFileId': audio_file_object_id}}}
@@ -487,13 +465,11 @@ def delete_project(user_id, project_title):
         project = next((project for project in user.get('projects', []) if project['title'] == project_title_decoded), None)
 
         if project:
-            # Delete associated audio files from GridFS
             if 'audioFiles' in project:
                 for audio_file in project['audioFiles']:
                     if 'audioFileId' in audio_file:
                         grid_fs_bucket.delete(audio_file['audioFileId'])
 
-            # Now, delete the project itself from the user's document
             users_collection.update_one({'_id': ObjectId(user_id)}, {'$pull': {'projects': {'title': project_title_decoded}}})
 
             return jsonify({'message': 'Project and associated audio files deleted successfully'}), 200
