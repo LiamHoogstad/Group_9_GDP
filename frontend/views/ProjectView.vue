@@ -161,8 +161,8 @@ const fetchAudioFilename = async () => {
         </div>
       </div>
     </div>
-    <div class="upload-area" style="text-align: center; margin-top: 20px">
-      <p>{{ fileName }}</p>
+    <div class="upload-area" style="text-align: center">
+      <p style="margin-top: 20px">{{ fileName }}</p>
       <v-btn color="primary" depressed>
         <label for="upload-btn" class="custom-file-upload"> Upload MP3 </label>
         <input
@@ -174,17 +174,138 @@ const fetchAudioFilename = async () => {
         />
       </v-btn>
       <v-btn color="success" @click="uploadAudioFile">Submit Audio</v-btn>
+      <div class="first" style="margin-top: 20px">
+        <div class="second">
+          <table>
+            <tr v-for="range in 3">
+              <td class="trackControls">
+                <button class="delete"><h2>x</h2></button>
+                <div class="properties">
+                  <textarea>track name</textarea>
+                  <div class="volume">
+                    <Slider/>
+                    <button>S</button>
+                    <button>M</button>
+                  </div>
+                </div>
+                <button class="record"><h2>•</h2></button>
+              </td>
+              <td class="trackPreview">QWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNM</td>
+            </tr>
+          </table>
+        </div>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
 
+.upload-area {
+  contain:size;
+}
+
+table {
+  border-spacing: 0 0.5em;
+}
+tr {
+  margin: 0px;
+  background-color: var(--colour-panel-soft);
+  text-align: left;
+  height: 6em;
+}
+td {
+  margin: 0px;
+  white-space:nowrap;
+}
+
+div.second {
+    overflow-x:auto;  
+    margin-left: calc(25% + 0.5em); 
+    overflow-y:auto;
+    height: auto;
+}
+div.first {
+    width: auto;
+    overflow-y: auto;
+    overflow-x: hidden;
+    left:0;
+    top:auto;
+}
+
+.trackControls {
+  position: absolute;
+  width: 25%;
+  height: inherit;
+  left: 0.5em;
+  top: auto;
+  display: flex;
+  background-color: var(--colour-panel-hard);
+  border-radius: 3em 0 0 3em;
+  overflow: hidden;
+  box-shadow: 0 0 0.5em var(--colour-dropshadow);
+}
+
+.trackControls button.delete {
+  background-color: transparent;
+  font-family: "Fredoka";
+}
+
+.trackControls .properties {
+  margin: 0.5em 0.5em 0.5em 0;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.trackControls .properties textarea {
+  resize: none;
+  background-color: var(--colour-background);
+  color: var(--colour-text);
+  padding-left: 0.5em;
+  overflow: hidden;
+}
+
+.trackControls .properties .volume {
+  margin-top: 0.5em;
+  height: 1.2em;
+  display: flex;
+  align-items: center;
+}
+
+.trackControls .properties input.slider {
+  flex-grow: 1;
+}
+
+.trackControls .properties button {
+  height: inherit;
+  padding: 0;
+  margin-left: 0.5em;
+  width: 1.2em;
+  line-height: 0.3em;
+  font-weight: 600;
+  background-color: var(--colour-background);
+  color: var(--colour-interactable);
+}
+
+.trackControls button.record {
+  margin: 0.5em 0.5em 0.5em 0;
+  padding: 0 0.5em 0 0.5em;
+  background-color: var(--colour-background);
+  color: var(--colour-interactable);
+  font-family: "Fredoka";
+}
+
+tr .trackPreview {
+  padding: 0 1em 0 1em;
+}
+
 #ribbon {
   width: 100%;
+  position: sticky;
+  contain: layout;
   background-color: var(--colour-panel-soft);
   padding: 0.5em 0 0.5em 0;
-  contain: layout;
 }
 
 #ribbon .left {
@@ -316,7 +437,7 @@ button#hamburger img {
 }
 
 .v-btn {
-  margin: .5em .5em 0 .5em;
+  margin: .4em .5em 0 .5em;
 }
 
 #track_list .track{
