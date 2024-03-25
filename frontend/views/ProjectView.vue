@@ -140,7 +140,7 @@ const fetchAudioFilename = async () => {
           <span>share</span>
           <span>help</span>
         </div>
-        <h2 id="project_name">{{ title }}</h2>
+        <h2 id="project_name" v-bind:title="title">{{ title }}</h2>
       </div>
       <div class="right">
         <HamburgerMenu/>
