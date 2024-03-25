@@ -179,16 +179,16 @@ const fetchAudioFilename = async () => {
           <table>
             <tr v-for="range in 3">
               <td class="trackControls">
-                <button class="delete"><h2>x</h2></button>
+                <button class="delete" title="Delete Track"><h2>x</h2></button>
                 <div class="properties">
                   <textarea>track name</textarea>
                   <div class="volume">
                     <Slider/>
-                    <button>S</button>
-                    <button>M</button>
+                    <button title="Solo Track">S</button>
+                    <button title="Mute Track">M</button>
                   </div>
                 </div>
-                <button class="record"><h2>•</h2></button>
+                <button class="record" title="Record"><h2>•</h2></button>
               </td>
               <td class="trackPreview">QWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNM</td>
             </tr>
