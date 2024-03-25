@@ -264,6 +264,7 @@ div.first {
   color: var(--colour-text);
   padding-left: 0.5em;
   overflow: hidden;
+  border-radius: 0.25em;
 }
 
 .trackControls .properties .volume {
