@@ -5,9 +5,7 @@ import axios from "axios";
 const audioSrc = ref("");
 const audio = new Audio();
 const isPlaying = ref(false);
-const currentProject = ref(null)
-
-
+const currentProject = ref(null);
 
 audio.addEventListener("ended", () => {
   currentProject.value = null;
@@ -20,42 +18,39 @@ export default {
   setup() {
     const projects = ref([]);
     const playCombinedAudio = async (username, title) => {
-      if(currentProject.value === title){
-        if(isPlaying.value){
-          audio.pause()
-        }
-        else{
-          audio.play()
+      if (currentProject.value === title) {
+        if (isPlaying.value) {
+          audio.pause();
+        } else {
+          audio.play();
         }
         isPlaying.value = !isPlaying.value;
-      }
-      else{
+      } else {
         audio.pause();
         isPlaying.value = false;
         currentProject.value = null;
         try {
           //console.log(username, title);
-        const response = await axios.get(
-          `http://127.0.0.1:5000/explorePageAudio/${username}/${title}`,
-          {
-          responseType: "blob",
-          }
-        );
-        audioSrc.value = URL.createObjectURL(response.data);
-        audio.src = audioSrc.value;
-        audio.play()
-        isPlaying.value = true;
-        currentProject.value = title;
-
-      } catch (error) {
-        console.error("Error fetching audio file:", error);
+          const response = await axios.get(
+            `http://127.0.0.1:5000/explorePageAudio/${username}/${title}`,
+            {
+              responseType: "blob",
+            }
+          );
+          audioSrc.value = URL.createObjectURL(response.data);
+          audio.src = audioSrc.value;
+          audio.play();
+          isPlaying.value = true;
+          currentProject.value = title;
+        } catch (error) {
+          console.error("Error fetching audio file:", error);
+        }
       }
-    }
-  };
-  const isProjectPlaying = (project) => {
-  return (currentProject.value === project) && (isPlaying.value) ;
-  };
-    
+    };
+    const isProjectPlaying = (project) => {
+      return currentProject.value === project && isPlaying.value;
+    };
+
     const fetchAllProjects = async () => {
       try {
         const response = await axios.get(
@@ -74,7 +69,7 @@ export default {
     return {
       projects,
       playCombinedAudio,
-      isProjectPlaying
+      isProjectPlaying,
     };
   },
 };
@@ -84,10 +79,10 @@ export default {
   <div class="explorePage">
     <h1>Explore</h1>
     <ul>
-      <div class="track" v-for="project in projects">
+      <div class="track" v-for="project in projects" :key="project.id">
         <div class="info">
-          <h3 class="title">{{ project.title}}</h3>
-          <h3 class="creator">{{project.user}}</h3>
+          <h3 class="title">{{ project.title }}</h3>
+          <h3 class="creator">{{ project.user }}</h3>
         </div>
         <h3 class="description">{{ project.description }}</h3>
         <div class="likeDislike">
@@ -95,8 +90,14 @@ export default {
           <button>dislike {{ 0 }}</button>
         </div>
         <div class="audioPreview"></div>
-        <button class="play" @click="playCombinedAudio(project.user, project.title)">
-          <img src="../assets/Play.svg" v-if="!isProjectPlaying(project.title)" />
+        <button
+          class="play"
+          @click="playCombinedAudio(project.user, project.title)"
+        >
+          <img
+            src="../assets/Play.svg"
+            v-if="!isProjectPlaying(project.title)"
+          />
           <img src="../assets/Pause.svg" v-else />
         </button>
       </div>
@@ -112,7 +113,7 @@ export default {
 }
 
 h1 {
-  font-family: 'Delta Gothic One';
+  font-family: "Delta Gothic One";
   padding: 0.5em;
 }
 
@@ -126,10 +127,10 @@ h1 {
   border-radius: 1em;
 }
 
-.track .info .title{
+.track .info .title {
   font-family: "Delta Gothic One";
 }
-.track .info .creator{
+.track .info .creator {
   font-style: italic;
 }
 
@@ -149,7 +150,7 @@ h1 {
   flex-direction: column;
 }
 
-.track .likeDislike button{
+.track .likeDislike button {
   color: var(--colour-interactable);
   background-color: var(--colour-background);
   padding: 0 0.25em 0 0.25em;
@@ -157,11 +158,11 @@ h1 {
   border-radius: 0.25em;
 }
 
-.track .likeDislike button.like{
+.track .likeDislike button.like {
   margin-bottom: 0.5em;
 }
 
-.track .likeDislike button{
+.track .likeDislike button {
   color: var(--colour-interactable);
   background-color: var(--colour-background);
   font-weight: 600;
@@ -170,11 +171,10 @@ h1 {
 }
 
 .track .audioPreview {
-  flex: 1
+  flex: 1;
 }
 
 .track .play {
   margin-right: 0.5em;
 }
-
 </style>

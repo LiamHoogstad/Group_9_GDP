@@ -2,128 +2,233 @@
 import { ref, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import Slider from "../components/Slider.vue";
+import HamburgerMenu from "../components/HamburgerMenu.vue";
 import axios from "axios";
 
 const router = useRouter();
 const title = ref(router.currentRoute.value.params.title);
-const fileName = ref("");
-const audioFile = ref(null);
-const audioSrc = ref("");
-const audio = new Audio();
-const isPlaying = ref(false);
+const audioFiles = ref([]);
 const volume = ref(100);
+const isPlaying = ref(false);
+const audioSrc = ref("");
+const combinedAudioReady = ref(false);
+const isLoadingAudio = ref(true);
 
-onMounted(() => {
-  fetchAudioFile();
-  fetchAudioFilename();
-});
-
-watch(volume, (newVolume) => {
-  const volumeValue = newVolume / 100;
-  if (isFinite(volumeValue)) {
-    audio.volume = volumeValue;
-  } else {
-    console.error("Invalid volume:", newVolume);
-  }
-});
-
-function updateVolume(event) {
-  const newVolume = parseInt(event.target.value, 10);
-  if (isFinite(newVolume)) {
-    volume.value = newVolume;
-    audio.volume = newVolume / 100;
-  } else {
-    console.error("Invalid volume:", newVolume);
-  }
-}
-
-function handleFileChange(event) {
-  const files = event.target.files;
-  if (files.length > 0) {
-    const file = files[0];
-    if (file.type === "audio/mp3" || file.type === "audio/mpeg") {
-      fileName.value = file.name;
-      audio.src = URL.createObjectURL(file);
-      audioFile.value = file;
-    } else {
-      alert("Please upload an MP3 file.");
+watch(
+  audioFiles,
+  async (newVal, oldVal) => {
+    if (newVal.length > 0 && newVal !== oldVal) {
+      console.log(
+        "Audio files have changed. Streaming all audio files again..."
+      );
+      await streamAllAudioFiles();
     }
-  }
-}
+  },
+  { deep: true }
+);
 
-function togglePlay() {
-  isPlaying.value = !isPlaying.value;
-  if (isPlaying.value) {
-    audio.play();
+const togglePlay = async () => {
+  const audioPlayer = document.getElementById("projectAudio");
+
+  if (isLoadingAudio.value) {
+    console.log("Audio is still loading...");
+    return;
+  }
+
+  if (!combinedAudioReady.value) {
+    console.log("Combined audio is not ready yet. Trying to prepare it...");
+    await streamAllAudioFiles();
+  }
+
+  if (audioPlayer.src !== audioSrc.value || !isPlaying.value) {
+    if (audioPlayer.src !== audioSrc.value) {
+      console.log("Setting new audio source.");
+      audioPlayer.src = audioSrc.value;
+      audioPlayer.load();
+    }
+
+    try {
+      await audioPlayer.play();
+      isPlaying.value = true;
+    } catch (error) {
+      console.error("Playback failed:", error);
+    }
   } else {
-    audio.pause();
+    audioPlayer.pause();
+    isPlaying.value = false;
   }
-}
+};
 
-audio.addEventListener("ended", () => {
-  isPlaying.value = false;
+onMounted(async () => {
+  await fetchAudioFiles();
 });
 
-const uploadAudioFile = async () => {
-  if (!audioFile.value) return;
-  const formData = new FormData();
-  formData.append("file", audioFile.value);
-  formData.append("title", title.value);
+async function streamAllAudioFiles() {
+  isLoadingAudio.value = true;
+
+  const audioPlayer = document.getElementById("projectAudio");
+  if (isPlaying.value) {
+    audioPlayer.pause();
+    isPlaying.value = false;
+  }
 
   const accessToken = localStorage.getItem("userToken");
+  const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+
   try {
-    await axios.post("http://127.0.0.1:5000/uploadAudioToProject", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-        Authorization: `Bearer ${accessToken}`,
-      },
+    console.log("Combining all audio files in the backend...");
+    const response = await axios.get(
+      `http://127.0.0.1:5000/streamProjectAudios/${userId}/${encodeURIComponent(
+        title.value
+      )}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    console.log("Audio files combined successfully: ");
+
+    const combinedAudioUrl = `http://127.0.0.1:5000/streamProjectCombinedAudio/${userId}/${encodeURIComponent(
+      title.value
+    )}`;
+    audioSrc.value = combinedAudioUrl + "?v=" + new Date().getTime(); // Adding a timestamp to prevent caching
+
+    await new Promise((resolve, reject) => {
+      const audioPlayer = document.getElementById("projectAudio");
+      audioPlayer.src = audioSrc.value; // Use the updated src with the timestamp
+
+      audioPlayer.onloadeddata = () => {
+        console.log("Audio data has loaded and is now ready to play");
+        isLoadingAudio.value = false;
+        resolve();
+      };
+
+      audioPlayer.onerror = () => {
+        console.error("Error loading combined audio");
+        reject("Error loading audio");
+      };
+
+      audioPlayer.load();
     });
 
-    fetchAudioFile();
+    combinedAudioReady.value = true;
   } catch (error) {
-    console.error("Upload Error:", error);
+    console.error("Error combining or streaming audio files:", error);
+  }
+}
+
+async function fetchAudioFiles() {
+  const accessToken = localStorage.getItem("userToken");
+  const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+
+  try {
+    const response = await axios.get(
+      `http://127.0.0.1:5000/getAudios/${userId}/${encodeURIComponent(
+        title.value
+      )}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+    audioFiles.value = response.data.map((file) => ({
+      ...file,
+      src: `http://127.0.0.1:5000/streamAudio/${file.audioFileId}`,
+    }));
+    console.log("Audio files have been fetched and processed");
+    console.log(audioFiles);
+  } catch (error) {
+    console.error("Error fetching audio files:", error);
+  }
+}
+
+function updateVolume(newVolume) {
+  const volumeValue = newVolume / 100;
+  const audioPlayer = document.getElementById("projectAudio");
+  audioPlayer.volume = volumeValue;
+}
+
+const addAudioRow = () => {
+  audioFiles.value.push({ source: "" });
+};
+
+const triggerFileInput = (index) => {
+  document.getElementById("file-input-" + index).click();
+};
+const triggerNewFileInput = () => {
+  document.getElementById("new-file-input").click();
+};
+const updateFile = async (index, event) => {
+  const file = event.target.files[0];
+  if (file) {
+    const formData = new FormData();
+    formData.append("file", file);
+    const accessToken = localStorage.getItem("userToken");
+    const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+
+    try {
+      console.log("Uploading file...");
+      const response = await axios.post(
+        `http://127.0.0.1:5000/uploadAudioToProject/${userId}/${encodeURIComponent(
+          title.value
+        )}/${index}`,
+        formData,
+        {
+          headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+      console.log("Upload response:", response.data.message);
+
+      // Only fetch new audio files list and stream all audio files if the upload was successful
+      await fetchAudioFiles();
+    } catch (error) {
+      console.error(
+        "Error uploading file:",
+        error.response ? error.response.data : error
+      );
+    }
   }
 };
 
-const fetchAudioFile = async () => {
-  const accessToken = localStorage.getItem("userToken");
-  const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
-  try {
-    const response = await axios.get(
-      `http://127.0.0.1:5000/getAudio/${userId}/${encodeURIComponent(
-        title.value
-      )}`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-        responseType: "blob",
-      }
-    );
-    audioSrc.value = URL.createObjectURL(response.data);
-    audio.src = audioSrc.value;
-  } catch (error) {
-    console.error("Error fetching audio file:", error);
+const deleteAudioFile = async (index) => {
+  isLoadingAudio.value = true;
+
+  const audioPlayer = document.getElementById("projectAudio");
+  if (isPlaying.value) {
+    audioPlayer.pause();
+    isPlaying.value = false;
   }
-};
-const fetchAudioFilename = async () => {
+
+  const fileToDelete = audioFiles.value[index];
+  if (!fileToDelete || !fileToDelete.audioFileId) {
+    console.error("File data is missing.");
+    return;
+  }
+
   const accessToken = localStorage.getItem("userToken");
   const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+
   try {
-    const response = await axios.get(
-      `http://127.0.0.1:5000/getAudioFilename/${userId}/${encodeURIComponent(
-        title.value
-      )}`,
+    console.log("Deleting file...");
+    await axios.delete(
+      `http://127.0.0.1:5000/deleteAudio/${userId}/${fileToDelete.audioFileId}`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
       }
     );
-    fileName.value = response.data.audioFilename;
+    console.log("File deleted successfully");
+    audioFiles.value.splice(index, 1);
+
+    isLoadingAudio.value = false;
+    await fetchAudioFiles();
   } catch (error) {
-    console.error("Error fetching audio filename:", error);
-    fileName.value = "No audio file in project";
+    console.error(
+      "Error deleting the file:",
+      error.response ? error.response.data : error
+    );
   }
 };
 </script>
@@ -149,85 +254,244 @@ export default {
           <span>share</span>
           <span>help</span>
         </div>
-        <h2 id="project_name">{{ title }}</h2>
-      </div>
-      <div class="centre">
-        <button id="play_pause" @click="togglePlay">
-          <img src="../assets/Play.svg" v-if="!isPlaying" />
-          <img src="../assets/Pause.svg" v-else />
-        </button>
-        <Slider
-          :value="volume"
-          @input="updateVolume"
-          :min="0"
-          :max="100"
-          id="master_volume"
-        />
+        <h2 id="project_name" v-bind:title="title">{{ title }}</h2>
       </div>
       <div class="right">
-        <button id="hamburger" @click="drawerVisible = true">
-          <img src="@/assets/Hamburger Menu.svg" />
-        </button>
+        <HamburgerMenu />
+      </div>
+      <div class="centre">
+        <div id="playbackControls">
+          <p v-if="isLoadingAudio" style="text-align: center">Loading...</p>
+          <button v-else id="play_pause" @click="togglePlay">
+            <img src="../assets/Play.svg" v-if="!isPlaying" />
+            <img src="../assets/Pause.svg" v-else />
+          </button>
+          <Slider
+            :value="volume"
+            @update:modelValue="updateVolume"
+            :min="0"
+            :max="100"
+          />
+
+          <audio id="projectAudio" controls style="display: none"></audio>
+        </div>
+      </div>
+      <div class="right">
+        <HamburgerMenu />
       </div>
     </div>
-    <div class="upload-area" style="text-align: center; margin-top: 20px">
-      <p>{{ fileName }}</p>
-      <v-btn color="primary" depressed>
-        <label for="upload-btn" class="custom-file-upload"> Upload MP3 </label>
-        <input
-          id="upload-btn"
-          type="file"
-          @change="handleFileChange"
-          style="display: none"
-          accept=".mp3,audio/*"
-        />
-      </v-btn>
-      <v-btn color="success" @click="uploadAudioFile">Submit Audio</v-btn>
-    </div>
-    <div id="drawer"
-      :style="{
-        width: drawerVisible ? '25em' : '0',
-        paddingLeft: drawerVisible ? '10px' : '0',
-      }"
-    >
-      <button class="close" @click="drawerVisible = false">x</button>
-      <ul>
-        <h1><router-link to="/">Home</router-link></h1>
-        <h1><router-link to="/explore">Explore</router-link></h1>
-        <h1><router-link to="/profile-page">Account</router-link></h1>
-      </ul>
+    <div class="upload-area" style="text-align: center">
+      <div
+        class="first"
+        style="margin-top: 20px"
+        v-for="(audio, index) in audioFiles"
+        :key="index"
+      >
+        <div class="second">
+          <table>
+            <tr>
+              <td class="trackControls">
+                <button
+                  class="delete"
+                  title="Delete Track"
+                  @click="deleteAudioFile(index)"
+                >
+                  <h2>x</h2>
+                </button>
+                <div class="properties">
+                  <textarea v-model="audio.audioFilename"></textarea>
+                  <div class="volume">
+                    <Slider />
+                    <button title="Solo Track">S</button>
+                    <button title="Mute Track">M</button>
+                    <input
+                      type="file"
+                      :id="'file-input-' + index"
+                      @change="(event) => updateFile(index, event)"
+                      accept="audio/*"
+                      style="display: none"
+                    /><button
+                      v-if="isLoadingAudio"
+                      title="Change Track"
+                      style="cursor: not-allowed"
+                    >
+                      C
+                    </button>
+                    <button
+                      v-else
+                      title="Change Track"
+                      @click="triggerFileInput(index)"
+                    >
+                      C
+                    </button>
+                  </div>
+                </div>
+                <button class="record" title="Record"><h2>•</h2></button>
+              </td>
+              <td class="trackPreview">
+                {{
+                  audio.audioPreview ||
+                  "QWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNM"
+                }}
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+      <input
+        type="file"
+        id="new-file-input"
+        @change="(event) => updateFile(audioFiles.length, event)"
+        accept="audio/*"
+        style="display: none"
+      />
+      <p v-if="isLoadingAudio" style="text-align: center; margin-top: 20px">
+        Please wait for files to load...
+      </p>
+      <button
+        v-if="isLoadingAudio"
+        style="margin-top: 20px; cursor: not-allowed"
+        disabled
+      >
+        Add Audio File
+      </button>
+      <button v-else @click="triggerNewFileInput" style="margin-top: 20px">
+        Add Audio File
+      </button>
     </div>
   </div>
 </template>
 
 <style scoped>
-#ribbon {
-  width: 100%;
-  height: fit-content;
+.upload-area {
+  contain: size;
+}
+
+table {
+  border-spacing: 0 0.5em;
+}
+tr {
+  margin: 0px;
   background-color: var(--colour-panel-soft);
-  padding: 0.5em 0 0.5em 0;
-  text-align: center;
-  overflow: hidden;
+  text-align: left;
+  height: 6em;
+}
+td {
+  margin: 0px;
+  white-space: nowrap;
+}
+
+div.second {
+  overflow-x: auto;
+  margin-left: calc(25% + 0.5em);
+  overflow-y: auto;
+  height: auto;
+}
+div.first {
+  width: auto;
+  overflow-y: auto;
+  overflow-x: hidden;
+  left: 0;
+  top: auto;
+}
+
+.trackControls {
+  position: absolute;
+  width: 25%;
+  height: inherit;
+  left: 0.5em;
+  top: auto;
   display: flex;
-  justify-content: space-between;
+  background-color: var(--colour-panel-hard);
+  border-radius: 3em 0 0 3em;
+  overflow: hidden;
+  box-shadow: 0 0 0.5em var(--colour-dropshadow);
+}
+
+.trackControls button.delete {
+  background-color: transparent;
+  font-family: "Fredoka";
+}
+
+.trackControls .properties {
+  margin: 0.5em 0.5em 0.5em 0;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.trackControls .properties textarea {
+  resize: none;
+  background-color: var(--colour-background);
+  color: var(--colour-text);
+  padding-left: 0.5em;
+  overflow: hidden;
+  border-radius: 0.25em;
+}
+
+.trackControls .properties .volume {
+  margin-top: 0.5em;
+  height: 1.2em;
+  display: flex;
   align-items: center;
 }
 
+.trackControls .properties input.slider {
+  flex-grow: 1;
+}
+
+.trackControls .properties button {
+  height: inherit;
+  padding: 0;
+  margin-left: 0.5em;
+  width: 1.2em;
+  line-height: 0.3em;
+  font-weight: 600;
+  background-color: var(--colour-background);
+  color: var(--colour-interactable);
+}
+
+.trackControls button.record {
+  margin: 0.5em 0.5em 0.5em 0;
+  padding: 0 0.5em 0 0.5em;
+  background-color: var(--colour-background);
+  color: var(--colour-interactable);
+  font-family: "Fredoka";
+}
+
+tr .trackPreview {
+  padding: 0 1em 0 1em;
+}
+
+#ribbon {
+  width: 100%;
+  position: sticky;
+  contain: layout;
+  background-color: var(--colour-panel-soft);
+  padding: 0.5em 0 0.5em 0;
+}
+
 #ribbon .left {
-  padding-left: 0.5em;
+  width: 33.3333%;
   text-align: left;
+  float: left;
+  overflow: hidden;
+}
+
+#ribbon .right {
+  width: 33.3333%;
+  text-align: right;
+  float: right;
 }
 
 #ribbon .centre {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  width: 15vw;
+  width: 33.333%;
+  float: left;
 }
 
 #ribbon .dropdowns span {
   font-weight: 600;
-  margin-right: 0.5em;
+  margin-left: 0.5em;
   padding: 0 0.25em 0 0.25em;
   border-radius: 0.25em;
   cursor: pointer;
@@ -239,7 +503,15 @@ export default {
 
 h2#project_name {
   font-family: "Delta Gothic One";
-  margin-left: 0.25em;
+  margin-left: 0.5em;
+}
+
+#playbackControls {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  width: 15vw;
+  margin: 0 auto 0 auto;
 }
 
 button {
@@ -269,6 +541,7 @@ button#play_pause img {
 
 button#hamburger {
   border-radius: 100% 0 0 100%;
+  margin: 0 0 0 auto;
   padding: 0.75em 1em 0.75em 1em;
   cursor: pointer;
   display: flex;
@@ -316,7 +589,7 @@ button#hamburger img {
   font-family: "Fredoka";
   font-size: 2.5em;
   min-width: 0;
-  padding: 0 .5em 0 0.5em;
+  padding: 0 0.5em 0 0.5em;
 }
 
 #drawer button.close:hover {
@@ -326,7 +599,11 @@ button#hamburger img {
   background: none;
 }
 
-#track_list .track{
+.v-btn {
+  margin: 0.4em 0.5em 0 0.5em;
+}
+
+#track_list .track {
   margin: 1em 0 0 1em;
   padding: 1em 1em 1em 2em;
   background-color: var(--colour-interactable);
