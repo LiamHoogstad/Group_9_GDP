@@ -198,33 +198,46 @@ def get_projects(user_id):
 def get_all_projects():
     all_projects = []
     # Query the database to retrieve all users and their projects
-    #all_users = users_collection.find({}, {'projects': 1}
-    print("Hi2")
     for user in users_collection.find({}, {'projects': 1}):
         if user:
-            print(user)
+            #print(user)
             for project in user.get('projects', []):
                 project_modified = project.copy()
                 username = users_collection.find_one({'_id': user['_id']})
                 project_modified['user']=username.get('username')
-                if 'audioFileId' in project:
-                    project_modified['audioFileId'] = str(project['audioFileId'])
+                if 'audioFiles' in project:
+                    del project_modified['audioFiles']
+                    #print(project_modified)
+                if 'combinedAudioId' in project:
+                    del project_modified['combinedAudioId']
                 all_projects.append(project_modified)
-        #if user and 'projects' in user:
-            # Add projects of each user to the list of all projects
-        #   if 'audioFileId' in user['projects']:
-        #        user['projects']['audioFileId'] = str(user['projects']['audioFileId'])
 
-        #    all_projects.append(user['projects'])
-
-
-    #print("HIII")
     #print(all_projects)
     #print(type(all_projects))
     if all_projects:
         return  jsonify(all_projects), 200
     else:
         return jsonify({"message": "No projects available"}), 404
+
+@app.route('/explorePageAudio/<username>/<project_title>', methods=['GET'])
+def play_explore_page_audio(username, project_title):
+    try:
+        user = users_collection.find_one({'username': username})
+        #project_title_decoded = project_title.replace("%20", " ")
+        project = next((p for p in user.get('projects', []) if p['title'] == project_title), None)
+        if project and 'combinedAudioId' in project:
+            combined_audio_id = project['combinedAudioId']
+            file = grid_fs_bucket.open_download_stream(ObjectId(combined_audio_id))
+            return send_file(
+                io.BytesIO(file.read()),
+                mimetype='audio/mpeg',
+                as_attachment=False
+            )
+        else:
+            return jsonify({'message': 'Project or combined audio not found'}), 404
+    except Exception as e:
+        return jsonify({'message': 'Error streaming combined audio: ' + str(e)}), 500
+
 
 @app.route('/uploadAudioToProject', methods=['POST'])
 @jwt_required()
