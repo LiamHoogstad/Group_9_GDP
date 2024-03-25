@@ -181,7 +181,7 @@ const fetchAudioFilename = async () => {
               <td class="trackControls">
                 <button class="delete" title="Delete Track"><h2>x</h2></button>
                 <div class="properties">
-                  <textarea>track name</textarea>
+                  <textarea placeholder="Enter track name...">track name</textarea>
                   <div class="volume">
                     <Slider/>
                     <button title="Solo Track">S</button>
@@ -252,7 +252,7 @@ div.first {
 }
 
 .trackControls .properties {
-  margin: 0.5em 0.5em 0.5em 0;
+  margin: 0.5em 0.5em 0 0;
   display: flex;
   flex-direction: column;
   flex-grow: 1;
