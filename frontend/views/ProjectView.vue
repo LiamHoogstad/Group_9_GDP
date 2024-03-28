@@ -140,7 +140,7 @@ const fetchAudioFilename = async () => {
           <span>share</span>
           <span>help</span>
         </div>
-        <h2 id="project_name" v-bind:title="title">{{ title }}</h2>
+        <input type="text" id="project_name"v-bind:title="title" v-model = "title"/>
       </div>
       <div class="right">
         <HamburgerMenu/>
@@ -306,7 +306,7 @@ tr .trackPreview {
   position: sticky;
   contain: layout;
   background-color: var(--colour-panel-soft);
-  padding: 0.5em 0 0.5em 0;
+  padding: 0.5em 0 0 0;
 }
 
 #ribbon .left {
@@ -339,9 +339,23 @@ tr .trackPreview {
   background-color: var(--colour-interactable);
 }
 
-h2#project_name {
+input#project_name {
   font-family: "Delta Gothic One";
-  margin-left: 0.5em;
+  width: 97%;
+  font-size: 20pt;
+  margin: 0.1em 0 0 0.5em;
+  padding-bottom: 0.25em;
+  height: 1.1em;
+  background-color: transparent;
+  color: var(--colour-text);
+  border-radius: 0.25em;
+  overflow: hidden;
+}
+
+input#project_name:focus {
+  outline: none;
+  border-color: none;
+  background-color: var(--colour-panel-hard);
 }
 
 #playbackControls {
@@ -349,7 +363,7 @@ h2#project_name {
   flex-direction: column;
   justify-content: center;
   width:15vw;
-  margin: 0 auto 0 auto;
+  margin: 0 auto 0.5em auto;
 }
 
 button {
