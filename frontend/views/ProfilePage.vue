@@ -12,11 +12,27 @@ export default {
     const showAddProjectPopup = ref(false);
     const newProjectTitle = ref("");
     const newProjectDescription = ref("");
+    const newProjectGenre = ref("");
     const projects = ref([]);
     const profilePictureUrl = ref(blankProfilePicture);
     const fileInput = ref(null);
     const router = useRouter();
     const onClickFileInput = () => fileInput.value.click();
+    const genres = [
+            { value: 'Pop', label: 'Pop' },
+            { value: 'Jazz', label: 'Jazz' },
+            { value: 'Funk', label: 'Funk' },
+            { value: 'Folk', label: 'Folk' },
+            { value: 'Disco', label: 'Disco' },
+            { value: 'House', label: 'House' },
+            { value: 'Techno', label: 'Techno' },
+            { value: 'Alternative Hip Hop', label: 'Alternative Hip Hop' },
+            { value: 'Hip Hop', label: 'Hip Hop' },
+            { value: 'Rap', label: 'Rap' },
+          ]
+    const sortedGenres = genres.sort((a, b) => {
+      return a.label.localeCompare(b.label);
+    });
 
     const fetchProfilePicture = async () => {
       const accessToken = localStorage.getItem("userToken");
@@ -115,10 +131,12 @@ export default {
         id: projects.value.length + 1,
         title: newProjectTitle.value,
         description: newProjectDescription.value,
+        genre: newProjectGenre.value,
       };
       projects.value.push(newProject);
       newProjectTitle.value = "";
       newProjectDescription.value = "";
+      newProjectGenre.value = "";
       showAddProjectPopup.value = false;
 
       addProjectToDB(newProject);
@@ -152,6 +170,9 @@ export default {
       showAddProjectPopup,
       newProjectTitle,
       newProjectDescription,
+      newProjectGenre,
+      genres,
+      sortedGenres,
       onClickFileInput,
       fileInput,
       profilePictureUrl,
@@ -209,6 +230,17 @@ export default {
                 border: 2px dashed var(--colour-panel-hard);
               "
             ></textarea>
+            <div class="form-inline justify-content-left">
+              <label class="mr-2" for="projectGenre">Genre:</label>
+              <select v-model="newProjectGenre" class="form-control mt-2" style="
+                border-radius: 5px;
+                border: 2px dashed var(--colour-panel-hard);
+              ">
+                <option v-for="(option, index) in sortedGenres" :key="index" :value="option.value">
+                  {{ option.label }}
+                </option>
+              </select>
+            </div>  
             <div class="buttonContainer">
               <button @click="addProject">Add Project</button>
               <button @click="showAddProjectPopup = false">Cancel</button>
@@ -223,6 +255,7 @@ export default {
         >
           <h3>{{ project.title }}</h3>
           <p>{{ project.description }}</p>
+          <p>{{ project.genre }}</p>
         </div>
         <div class="project addProject" @click="showAddProjectPopup = true">
           <h3>
