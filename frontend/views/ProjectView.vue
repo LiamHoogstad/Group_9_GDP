@@ -254,7 +254,7 @@ export default {
           <span>share</span>
           <span>help</span>
         </div>
-        <h2 id="project_name" v-bind:title="title">{{ title }}</h2>
+        <input type="text" id="project_name"v-bind:title="title" v-model = "title"/>
       </div>
       <div class="right">
         <HamburgerMenu />
@@ -286,7 +286,7 @@ export default {
                   <h2>x</h2>
                 </button>
                 <div class="properties">
-                  <textarea v-model="audio.audioFilename"></textarea>
+                  <textarea placeholder="Enter track name..." v-model="audio.audioFilename"></textarea>
                   <div class="volume">
                     <Slider />
                     <button title="Solo Track">S</button>
@@ -382,7 +382,7 @@ div.first {
 }
 
 .trackControls .properties {
-  margin: 0.5em 0.5em 0.5em 0;
+  margin: 0.5em 0.5em 0 0;
   display: flex;
   flex-direction: column;
   flex-grow: 1;
@@ -436,7 +436,7 @@ tr .trackPreview {
   position: sticky;
   contain: layout;
   background-color: var(--colour-panel-soft);
-  padding: 0.5em 0 0.5em 0;
+  padding: 0.5em 0 0 0;
 }
 
 #ribbon .left {
@@ -469,9 +469,23 @@ tr .trackPreview {
   background-color: var(--colour-interactable);
 }
 
-h2#project_name {
+input#project_name {
   font-family: "Delta Gothic One";
-  margin-left: 0.5em;
+  width: 97%;
+  font-size: 20pt;
+  margin: 0.1em 0 0 0.5em;
+  padding-bottom: 0.25em;
+  height: 1.1em;
+  background-color: transparent;
+  color: var(--colour-text);
+  border-radius: 0.25em;
+  overflow: hidden;
+}
+
+input#project_name:focus {
+  outline: none;
+  border-color: none;
+  background-color: var(--colour-panel-hard);
 }
 
 #playbackControls {
