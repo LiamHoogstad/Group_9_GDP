@@ -473,7 +473,7 @@ input#project_name {
   font-family: "Delta Gothic One";
   width: 97%;
   font-size: 20pt;
-  margin: 0.1em 0 0 0.5em;
+  margin: 0.15em 0 0.4em 0.5em;
   padding-bottom: 0.25em;
   height: 1.1em;
   background-color: transparent;
