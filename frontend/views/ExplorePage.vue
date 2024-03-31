@@ -6,6 +6,8 @@ const audioSrc = ref("");
 const audio = new Audio();
 const isPlaying = ref(false);
 const currentProject = ref(null);
+const searchQuery = ref("");
+const errorFile = ref(null);
 
 audio.addEventListener("ended", () => {
   currentProject.value = null;
@@ -29,6 +31,7 @@ export default {
         audio.pause();
         isPlaying.value = false;
         currentProject.value = null;
+
         try {
           //console.log(username, title);
           const response = await axios.get(
@@ -42,7 +45,9 @@ export default {
           audio.play();
           isPlaying.value = true;
           currentProject.value = title;
+          errorFile.value=null;
         } catch (error) {
+          errorFile.value = title;
           console.error("Error fetching audio file:", error);
         }
       }
@@ -65,11 +70,20 @@ export default {
     onMounted(() => {
       fetchAllProjects();
     });
+    const filteredProjects = computed(() => {
+      let filtered = [];
+      filtered = projects.value.filter(project => project.title.toLowerCase().includes(searchQuery.value.toLowerCase()));
+      return filtered;
+    });
 
     return {
       projects,
+      filteredProjects,
       playCombinedAudio,
       isProjectPlaying,
+      errorFile,
+      isPlaying,
+      searchQuery
     };
   },
 };
@@ -78,8 +92,9 @@ export default {
 <template>
   <div class="explorePage">
     <h1>Explore</h1>
+      <input type="text" v-model="searchQuery" class="search-input" placeholder="Search for projects by name...">
     <ul>
-      <div class="track" v-for="project in projects" :key="project.id">
+      <div class="track" v-for="project in filteredProjects">
         <div class="info">
           <h3 class="title">{{ project.title }}</h3>
           <h3 class="creator">{{ project.user }}</h3>
@@ -89,6 +104,7 @@ export default {
           <button class="like">like {{ 0 }}</button>
           <button>dislike {{ 0 }}</button>
         </div>
+        <div  v-if="errorFile==project.title && !isPlaying" class="audioError">Error: Unable to fetch project audio</div>
         <div class="audioPreview"></div>
         <button
           class="play"
@@ -115,6 +131,32 @@ export default {
 h1 {
   font-family: "Delta Gothic One";
   padding: 0.5em;
+}
+
+.search-input {
+  width: 50%;
+  padding: 0.5em 2em 0.5em 2em;
+  border: 0px solid var(--colour-interactable);
+  border-radius: 0.5em;
+  flex: 0.5;
+  margin-top: 1em;
+  background-image: url('../assets/search.svg'); /* Path to your search icon */
+  background-repeat: no-repeat;
+  background-position: 8px 50%;
+  background-size: 20px 20px;
+  background-color: var(--colour-background);
+  margin-bottom: 1em; 
+  font-size: medium;
+  outline: none;
+  color: var(--colour-text)
+}
+.search-input::placeholder {
+  color: var(--colour-interactable);
+}
+.audioError{
+  position: relative; 
+  transform: translate(75%, 30%);
+  color: maroon;
 }
 
 .track {
