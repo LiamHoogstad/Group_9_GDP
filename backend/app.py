@@ -494,9 +494,9 @@ def play_explore_page_audio(username, project_title):
 @app.route('/contributeToProject', methods=['POST'])
 def contribute_to_project():
     data = request.json
-    project_id = int(data.get('projectId'))  
-    user_id = ObjectId(data.get('userId'))  
-    creator_username = data.get('projectCreator')  
+    project_id = int(data.get('projectId'))
+    user_id = ObjectId(data.get('userId'))
+    creator_username = data.get('projectCreator')
 
     project_to_copy = None
     project_creator = users_collection.find_one({'username': creator_username})
@@ -506,7 +506,10 @@ def contribute_to_project():
 
     for project in project_creator.get('projects', []):
         if project.get('id') == project_id:
-            project_to_copy = project
+            # Remove the creator's user_id before copying
+            project_to_copy = project.copy()
+            if 'user_id' in project_to_copy:
+                del project_to_copy['user_id']
             break
 
     if not project_to_copy:
@@ -523,7 +526,15 @@ def contribute_to_project():
     if update_result.modified_count == 0:
         return jsonify({"message": "Failed to copy project"}), 500
 
-    return jsonify({"message": "Project copied successfully"}), 200
+    # Retrieve the updated user document to get the index of the newly added project
+    updated_user = users_collection.find_one({'_id': user_id})
+    new_project_index = len(updated_user['projects']) - 1
+    new_project_title = updated_user['projects'][new_project_index]['title']
+
+    return jsonify({
+        "message": "Project copied successfully",
+        "newProjectTitle": new_project_title  # Send the index of the new project
+    }), 200
 
 if __name__ == '__main__':
     app.run(debug=True)

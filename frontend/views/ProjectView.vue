@@ -1,11 +1,12 @@
 <script setup>
 import { ref, onMounted, watch } from "vue";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import Slider from "../components/Slider.vue";
 import HamburgerMenu from "../components/HamburgerMenu.vue";
 import axios from "axios";
 
 const router = useRouter();
+const route = useRoute();
 const title = ref(router.currentRoute.value.params.title);
 const audioFiles = ref([]);
 const volume = ref(100);
@@ -13,6 +14,23 @@ const isPlaying = ref(false);
 const audioSrc = ref("");
 const combinedAudioReady = ref(false);
 const isLoadingAudio = ref(true);
+
+// onMounted(async () => {
+//   // Assuming the project title comes from the route parameters (update accordingly)
+//   projectTitle.value = route.params.title;
+
+//   const accessToken = localStorage.getItem("userToken");
+//   if (!accessToken) {
+//     console.error("No access token found. Redirecting to login...");
+//     router.push({ name: "SignIn" });
+//     return;
+//   }
+
+//   const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+
+//   // Fetch the project by its title and the user's ID
+//   await fetchProjectData(userId, projectTitle.value);
+// });
 
 watch(
   audioFiles,
@@ -29,7 +47,6 @@ watch(
 
 const togglePlay = async () => {
   const audioPlayer = document.getElementById("projectAudio");
-
   if (isLoadingAudio.value) {
     console.log("Audio is still loading...");
     return;
@@ -58,10 +75,6 @@ const togglePlay = async () => {
     isPlaying.value = false;
   }
 };
-
-onMounted(async () => {
-  await fetchAudioFiles();
-});
 
 async function streamAllAudioFiles() {
   isLoadingAudio.value = true;
@@ -139,6 +152,10 @@ async function fetchAudioFiles() {
     console.error("Error fetching audio files:", error);
   }
 }
+
+onMounted(async () => {
+  await fetchAudioFiles();
+});
 
 function updateVolume(newVolume) {
   const volumeValue = newVolume / 100;

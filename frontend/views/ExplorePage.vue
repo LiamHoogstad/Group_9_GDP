@@ -1,6 +1,7 @@
 <script>
 import { ref, computed, onMounted } from "vue";
 import axios from "axios";
+import { useRouter } from "vue-router";
 
 const audioSrc = ref("");
 const audio = new Audio();
@@ -18,20 +19,27 @@ export default {
   name: "ExplorePage",
 
   setup() {
+    const router = useRouter(); // Moved inside setup()
     const projects = ref([]);
     const contributeToProject = async (projectUser, projectId) => {
       const accessToken = localStorage.getItem("userToken");
       const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
       try {
-        await axios.post(`http://127.0.0.1:5000/contributeToProject`, {
-          projectId: projectId,
-          projectCreator: projectUser,
-          userId: userId,
-        });
+        const response = await axios.post(
+          `http://127.0.0.1:5000/contributeToProject`,
+          {
+            projectId: projectId,
+            projectCreator: projectUser,
+            userId: userId,
+          }
+        );
         alert("Project copied successfully!");
+        const newProjectTitle = response.data.newProjectTitle;
+        console.log("NEW PROJECT TITLE" + newProjectTitle);
+        await clickProject(newProjectTitle); // assuming the ProjectView route expects an id parameter
       } catch (error) {
         console.error("Error contributing to project:", error);
-        alert(error.response.data.message);
+        alert(error.response?.data.message || "An error occurred");
       }
     };
     const playCombinedAudio = async (username, title) => {
@@ -91,7 +99,19 @@ export default {
       );
       return filtered;
     });
-
+    const clickProject = async (newProjectTitle) => {
+      try {
+        console.log("trying to run");
+        // Make sure this matches the route definition in your router setup
+        router.push({
+          name: "ProjectView",
+          params: { title: newProjectTitle },
+        });
+        console.log("Project opened successfully");
+      } catch (error) {
+        console.error("Error opening project:", error);
+      }
+    };
     return {
       projects,
       filteredProjects,
@@ -101,6 +121,7 @@ export default {
       isPlaying,
       searchQuery,
       contributeToProject,
+      clickProject,
     };
   },
 };
