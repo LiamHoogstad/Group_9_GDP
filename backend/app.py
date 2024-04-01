@@ -371,10 +371,13 @@ def stream_project_combined_audio(user_id, project_title):
     except Exception as e:
         return jsonify({'message': 'Error streaming combined audio: ' + str(e)}), 500
 
-@app.route('/streamProjectAudios/<user_id>/<project_title>', methods=['GET'])
-def stream_project_audios(user_id, project_title):
+@app.route('/streamProjectAudios/<user_id>/<volumes>/<project_title>', methods=['GET'])
+def stream_project_audios(user_id, volumes, project_title):
     print("Processing combined audio files...")
     user = users_collection.find_one({"_id": ObjectId(user_id)})
+
+    volume_list = [int(vol) for vol in volumes.split(',')]
+
     if user:
         project_title_decoded = project_title.replace("%20", " ")
         project = next((proj for proj in user.get('projects', []) if proj['title'] == project_title_decoded), None)
@@ -389,12 +392,17 @@ def stream_project_audios(user_id, project_title):
                     print(f"Error deleting old combined audio file: {e}")
             
             combined_audio = AudioSegment.silent(duration=300000)
-            for audio_file in project.get('audioFiles', []):
+            for index, audio_file in enumerate(project.get('audioFiles', [])):
                 if 'audioFileId' in audio_file:
                     try:
                         file_id = ObjectId(audio_file['audioFileId'])
                         grid_out = grid_fs_bucket.open_download_stream(file_id)
                         audio_segment = AudioSegment.from_file(io.BytesIO(grid_out.read()), format="mp3")
+                        
+                        # Adjust volume here
+                        if index < len(volume_list):
+                            audio_segment = audio_segment + (volume_list[index] - 100)  # Assuming volume_list contains values like 100 for original volume
+            
                         combined_audio = combined_audio.overlay(audio_segment)
                     except Exception as e:
                         print(f"Error processing file {audio_file['audioFileId']}: {e}")
@@ -420,6 +428,7 @@ def stream_project_audios(user_id, project_title):
         else:
             return jsonify({'message': 'Project not found'}), 404
     return jsonify({'message': 'User not found'}), 404
+
 
 
 @app.route('/deleteAudio/<user_id>/<audio_file_id>', methods=['DELETE'])
