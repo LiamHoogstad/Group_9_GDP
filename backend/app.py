@@ -218,30 +218,31 @@ def get_projects(user_id):
     else:
         return jsonify({"message": "User not found or no projects available"}), 404
 
+from bson import ObjectId  # Make sure to import ObjectId from bson
+
 @app.route('/getAllProjects', methods=['GET'])
 def get_all_projects():
     all_projects = []
     # Query the database to retrieve all users and their projects
-    for user in users_collection.find({}, {'projects': 1}):
+    for user in users_collection.find({}, {'projects': 1, 'username': 1}):
         if user:
-            #print(user)
             for project in user.get('projects', []):
                 project_modified = project.copy()
-                username = users_collection.find_one({'_id': user['_id']})
-                project_modified['user']=username.get('username')
+                project_modified['user'] = user.get('username')
+                # Convert ObjectId to string using the str function
+                project_modified['userId'] = str(user['_id'])
                 if 'audioFiles' in project:
                     del project_modified['audioFiles']
-                    #print(project_modified)
                 if 'combinedAudioId' in project:
                     del project_modified['combinedAudioId']
                 all_projects.append(project_modified)
 
-    #print(all_projects)
-    #print(type(all_projects))
     if all_projects:
-        return  jsonify(all_projects), 200
+        return jsonify(all_projects), 200
     else:
         return jsonify({"message": "No projects available"}), 404
+
+    
 @app.route('/uploadAudioToProject/<user_id>/<project_title>/<index>', methods=['POST'])
 @jwt_required()
 def upload_audio_to_project(user_id, project_title, index):
@@ -489,6 +490,40 @@ def play_explore_page_audio(username, project_title):
             return jsonify({'message': 'Project or combined audio not found'}), 404
     except Exception as e:
         return jsonify({'message': 'Error streaming combined audio: ' + str(e)}), 500
+
+@app.route('/contributeToProject', methods=['POST'])
+def contribute_to_project():
+    data = request.json
+    project_id = int(data.get('projectId'))  
+    user_id = ObjectId(data.get('userId'))  
+    creator_username = data.get('projectCreator')  
+
+    project_to_copy = None
+    project_creator = users_collection.find_one({'username': creator_username})
+
+    if not project_creator:
+        return jsonify({"message": "Project creator not found"}), 404
+
+    for project in project_creator.get('projects', []):
+        if project.get('id') == project_id:
+            project_to_copy = project
+            break
+
+    if not project_to_copy:
+        return jsonify({"message": "Project not found"}), 404
+
+    if project_creator['_id'] == user_id:
+        return jsonify({"message": "Cannot copy your own project"}), 400
+
+    update_result = users_collection.update_one(
+        {'_id': user_id},
+        {'$push': {'projects': project_to_copy}}
+    )
+
+    if update_result.modified_count == 0:
+        return jsonify({"message": "Failed to copy project"}), 500
+
+    return jsonify({"message": "Project copied successfully"}), 200
 
 if __name__ == '__main__':
     app.run(debug=True)
