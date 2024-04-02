@@ -215,11 +215,14 @@ const triggerNewFileInput = () => {
   document.getElementById("new-file-input").click();
 };
 let debounceTimer;
-const updateTrackVolume = (index, newVolume) => {
 
-  if (index >= 0 && index < globalVolumes.value.length) {
+const updateTrackVolume = (index, newVolume) => { ///////////////////////////////
+
+  console.log("MUAHAHAHAAHAHAHAHAHAHAHA");
+
+  if (index >= 0 && index < trackVolumes.value.length) {
     // Directly set the new value for the specified index
-    globalVolumes.value[index] = newVolume;
+    trackVolumes.value[index] = newVolume;
   } else {
     console.error("Index out of bounds or invalid");
   }
@@ -232,9 +235,26 @@ const updateTrackVolume = (index, newVolume) => {
 
   // Set a new timer
   debounceTimer = setTimeout(async () => {
-    const upDateDatabaseTrackAudio = `http://127.0.0.1:5000/updateAudioVolumeInProject/${userId}/
-      ${encodeURIComponent(title.value)}/${index}/${newVolume}`;
-    await streamAllAudioFiles();
+    try {
+      // Prepare the URL for the API call
+
+      const indexString = String(index)
+      const volumeString = String(newVolume)
+
+      const updateDatabaseTrackAudioUrl = `http://127.0.0.1:5000/updateAudioVolumeInProject/${userId}/${encodeURIComponent(title.value)}/${indexString}/${volumeString}`;
+      
+      // Make the call to the backend to update the volume
+      await axios.post(updateDatabaseTrackAudioUrl, {}, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      // Now that the backend call is completed, you can safely call `streamAllAudioFiles`
+      await streamAllAudioFiles();
+    } catch (error) {
+      console.error("Failed to update track volume in the backend:", error);
+    }
   }, 500); // 500 milliseconds = half a second
 };
 

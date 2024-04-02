@@ -4,6 +4,15 @@ import binascii
 from flask import Flask, request, jsonify, send_file
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
+from flask_jwt_extended.exceptions import (
+    NoAuthorizationError,
+    InvalidHeaderError,
+    WrongTokenError,
+    RevokedTokenError,
+    FreshTokenRequired,
+    CSRFError
+)
+from jwt.exceptions import ExpiredSignatureError, InvalidTokenError, DecodeError
 from flask_cors import CORS, cross_origin
 from pymongo import MongoClient
 from pymongo.server_api import ServerApi
@@ -343,6 +352,9 @@ def get_audios(user_id, project_title):
 @app.route('/updateAudioVolumeInProject/<user_id>/<project_title>/<index>/<new_volume>', methods=['POST'])
 @jwt_required()
 def update_audio_volume_in_project(user_id, project_title, index, new_volume):
+
+    print("MUAHAHAAHAHAHAHHAAH")
+
     current_user_id = get_jwt_identity()
     if str(current_user_id) != str(user_id):
         return jsonify({'message': 'Unauthorized'}), 403
@@ -353,7 +365,7 @@ def update_audio_volume_in_project(user_id, project_title, index, new_volume):
         return jsonify({'message': 'Invalid index provided'}), 400
 
     try:
-        new_volume = float(new_volume)  # Assuming volume can be a decimal value
+        new_volume = int(new_volume)  # Assuming volume can be a decimal value
     except ValueError:
         return jsonify({'message': 'Invalid volume provided'}), 400
 
@@ -372,6 +384,7 @@ def update_audio_volume_in_project(user_id, project_title, index, new_volume):
             {'_id': ObjectId(user_id), 'projects.title': project_title},
             {'$set': {f'projects.$.audioFiles.{index}.Volumes': new_volume}}
         )
+        print("Volume updated for audio file " + index + ". New Volume is " + new_volume)
         return jsonify({'message': 'Volume updated for audio file', 'index': index, 'new_volume': new_volume}), 200
     else:
         # Index out of range
