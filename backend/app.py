@@ -351,6 +351,60 @@ def stream_audio(file_id):
         )
     except NoFile:
         return jsonify({'message': 'File not found'}), 404
+    
+
+
+
+
+
+
+
+@app.route('/updateAudioVolume/<user_id>/<project_title>/<index>/<newVolume>', methods=['POST'])
+@jwt_required()
+def update_audio_volume(user_id, project_title, index, newVolume):
+
+    print("MUAHAHAHAHAHAHAHAHAHAHHAAHHAHHAHAHAH")
+
+    current_user_id = get_jwt_identity()
+    if str(current_user_id) != str(user_id):
+        return jsonify({'message': 'Unauthorized'}), 403
+
+    try:
+        index = int(index)  # Convert index to integer
+        newVolume = int(newVolume)  # Convert newVolume to float
+    except ValueError:
+        return jsonify({'message': 'Invalid index or volume provided'}), 400
+
+    # Check for valid volume range, adjust as needed for your application
+    if newVolume < 0 or newVolume > 1:
+        return jsonify({'message': 'Invalid volume value. Volume must be between 0 and 1.'}), 400
+
+    user = users_collection.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        return jsonify({'message': 'User not found'}), 404
+
+    project = next((p for p in user.get('projects', []) if p['title'] == project_title), None)
+    if project is None:
+        return jsonify({'message': 'Project not found'}), 404
+
+    # Ensure the index is within the range of existing audio files
+    if 0 <= index < len(project.get('audioFiles', [])):
+        # Update the volume of the specified audio file
+        users_collection.update_one(
+            {'_id': ObjectId(user_id), 'projects.title': project_title},
+            {'$set': {f'projects.$.audioFiles.{index}.Volumes': newVolume}}
+        )
+        return jsonify({'message': 'Volume updated successfully'}), 200
+    else:
+        return jsonify({'message': 'Invalid audio file index'}), 404
+
+
+
+
+
+
+
+
 
 @app.route('/streamProjectCombinedAudio/<user_id>/<project_title>', methods=['GET'])
 def stream_project_combined_audio(user_id, project_title):
@@ -395,6 +449,9 @@ def stream_project_audios(user_id, project_title):
                         file_id = ObjectId(audio_file['audioFileId'])
                         grid_out = grid_fs_bucket.open_download_stream(file_id)
                         audio_segment = AudioSegment.from_file(io.BytesIO(grid_out.read()), format="mp3")
+
+                        audio_segment = audio_segment - ((audio_file['Volumes']) - 100)
+
                         combined_audio = combined_audio.overlay(audio_segment)
                     except Exception as e:
                         print(f"Error processing file {audio_file['audioFileId']}: {e}")

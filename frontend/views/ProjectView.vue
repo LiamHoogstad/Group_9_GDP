@@ -146,6 +146,79 @@ function updateVolume(newVolume) {
   audioPlayer.volume = volumeValue;
 }
 
+
+
+
+
+/* qweoifnqwpeiofubqweifubqweofiubqweofiuqbweofiuqbwefoiuqwbefoqiuwefoqwieufbqwef */
+async function updateTrackVolume(index, newVolume) {
+  isLoadingAudio.value = true;
+
+  const audioPlayer = document.getElementById("projectAudio");
+  if (isPlaying.value) {
+    audioPlayer.pause();
+    isPlaying.value = false;
+  }
+
+  const accessToken = localStorage.getItem("userToken");
+  const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+
+  const indexString = String(index)
+  const volumeString = String(newVolume)
+
+  try {
+
+    console.log("Updating Audio in Database...")
+    const volumeResponse = await axios.get(
+      `http://127.0.0.1:5000/updateAudioVolume/${userId}/${encodeURIComponent(title.value)}/${indexString}/${volumeString}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+
+    console.log("Combining all audio files in the backend...");
+    const response = await axios.get(
+      `http://127.0.0.1:5000/streamProjectAudios/${userId}/${encodeURIComponent(
+        title.value
+      )}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    console.log("Audio files combined successfully: ");
+
+    const combinedAudioUrl = `http://127.0.0.1:5000/streamProjectCombinedAudio/${userId}/${encodeURIComponent(
+      title.value
+    )}`;
+    audioSrc.value = combinedAudioUrl + "?v=" + new Date().getTime(); // Adding a timestamp to prevent caching
+
+    await new Promise((resolve, reject) => {
+      const audioPlayer = document.getElementById("projectAudio");
+      audioPlayer.src = audioSrc.value; // Use the updated src with the timestamp
+
+      audioPlayer.onloadeddata = () => {
+        console.log("Audio data has loaded and is now ready to play");
+        isLoadingAudio.value = false;
+        resolve();
+      };
+
+      audioPlayer.onerror = () => {
+        console.error("Error loading combined audio");
+        reject("Error loading audio");
+      };
+
+      audioPlayer.load();
+    });
+
+    combinedAudioReady.value = true;
+  } catch (error) {
+    console.error("Error combining or streaming audio files:", error);
+  }
+
+}
+
+
+
+
+
+
+
 const addAudioRow = () => {
   audioFiles.value.push({ source: "" });
 };
@@ -288,7 +361,7 @@ export default {
                 <div class="properties">
                   <textarea v-model="audio.audioFilename"></textarea>
                   <div class="volume">
-                    <Slider />
+                    <Slider :value="75" @update:modelValue="updateTrackVolume(index)" :min="0" :max="100" />
                     <button title="Solo Track">S</button>
                     <button title="Mute Track">M</button>
                     <input type="file" :id="'file-input-' + index" @change="(event) => updateFile(index, event)"
