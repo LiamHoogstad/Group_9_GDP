@@ -13,6 +13,7 @@ const isPlaying = ref(false);
 const audioSrc = ref("");
 const combinedAudioReady = ref(false);
 const isLoadingAudio = ref(true);
+const trackVolumes = ref([]);
 
 watch(
   audioFiles,
@@ -183,10 +184,15 @@ async function fetchAudioFiles() {
     audioFiles.value = response.data.map((file) => ({
       ...file,
       src: `http://127.0.0.1:5000/streamAudio/${file.audioFileId}`,
-      volume: 100 // Default volume set to 100%
+      volume: 80 // Default volume set to 100%
     }));
+
+    // Load 'Volumes' into the global list
+    trackVolumes.value = response.data.map(file => file.Volumes);
+
     console.log("Audio files have been fetched and processed");
-    console.log(audioFiles);
+    // console.log(audioFiles);
+    console.log(JSON.stringify(audioFiles,null,2));
   } catch (error) {
     console.error("Error fetching audio files:", error);
   }
@@ -210,16 +216,28 @@ const triggerNewFileInput = () => {
 };
 let debounceTimer;
 const updateTrackVolume = (index, newVolume) => {
-  audioFiles.value[index].volume = newVolume;
+
+  if (index >= 0 && index < globalVolumes.value.length) {
+    // Directly set the new value for the specified index
+    globalVolumes.value[index] = newVolume;
+  } else {
+    console.error("Index out of bounds or invalid");
+  }
+
+  const accessToken = localStorage.getItem("userToken");
+  const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
 
   // Clear the previous timer if it exists
   clearTimeout(debounceTimer);
 
   // Set a new timer
   debounceTimer = setTimeout(async () => {
-    await streamAllAudioFiles(); // Call the function after 1 second of inactivity
-  }, 1000); // 1000 milliseconds = 1 second
+    const upDateDatabaseTrackAudio = `http://127.0.0.1:5000/updateAudioVolumeInProject/${userId}/
+      ${encodeURIComponent(title.value)}/${index}/${newVolume}`;
+    await streamAllAudioFiles();
+  }, 500); // 500 milliseconds = half a second
 };
+
 const updateFile = async (index, event) => {
   const file = event.target.files[0];
   if (file) {
@@ -352,7 +370,7 @@ export default {
                 <div class="properties">
                   <textarea placeholder="Enter track name..." v-model="audio.audioFilename"></textarea>
                   <div class="volume">
-                    <Slider :value="audio.volume" @update:modelValue="newVolume => updateTrackVolume(index, newVolume)" />
+                    <Slider :value="60" @update:modelValue="newVolume => updateTrackVolume(index, newVolume)" />
                     <button title="Solo Track">S</button>
                     <button title="Mute Track">M</button>
                     <input type="file" :id="'file-input-' + index" @change="(event) => updateFile(index, event)"

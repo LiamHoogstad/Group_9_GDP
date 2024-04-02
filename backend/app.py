@@ -242,6 +242,7 @@ def get_all_projects():
         return  jsonify(all_projects), 200
     else:
         return jsonify({"message": "No projects available"}), 404
+    
 @app.route('/uploadAudioToProject/<user_id>/<project_title>/<index>', methods=['POST'])
 @jwt_required()
 def upload_audio_to_project(user_id, project_title, index):
@@ -338,6 +339,44 @@ def get_audios(user_id, project_title):
         else:
             return jsonify({'message': 'Project not found'}), 404
     return jsonify({'message': 'User not found'}), 404
+
+@app.route('/updateAudioVolumeInProject/<user_id>/<project_title>/<index>/<new_volume>', methods=['POST'])
+@jwt_required()
+def update_audio_volume_in_project(user_id, project_title, index, new_volume):
+    current_user_id = get_jwt_identity()
+    if str(current_user_id) != str(user_id):
+        return jsonify({'message': 'Unauthorized'}), 403
+
+    try:
+        index = int(index)  # Convert index to integer
+    except ValueError:
+        return jsonify({'message': 'Invalid index provided'}), 400
+
+    try:
+        new_volume = float(new_volume)  # Assuming volume can be a decimal value
+    except ValueError:
+        return jsonify({'message': 'Invalid volume provided'}), 400
+
+    user = users_collection.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        return jsonify({'message': 'User not found'}), 404
+
+    project = next((p for p in user.get('projects', []) if p['title'] == project_title), None)
+    if project is None:
+        return jsonify({'message': 'Project not found'}), 404
+
+    # Check if the specified index is within the range of existing audio files
+    if 0 <= index < len(project.get('audioFiles', [])):
+        # Update volume for the specified audio file
+        users_collection.update_one(
+            {'_id': ObjectId(user_id), 'projects.title': project_title},
+            {'$set': {f'projects.$.audioFiles.{index}.Volumes': new_volume}}
+        )
+        return jsonify({'message': 'Volume updated for audio file', 'index': index, 'new_volume': new_volume}), 200
+    else:
+        # Index out of range
+        return jsonify({'message': 'Audio file index out of range'}), 400
+
     
 @app.route('/streamAudio/<file_id>', methods=['GET'])
 def stream_audio(file_id):
@@ -395,13 +434,16 @@ def stream_project_audios(user_id, volumes, project_title):
             for index, audio_file in enumerate(project.get('audioFiles', [])):
                 if 'audioFileId' in audio_file:
                     try:
+
                         file_id = ObjectId(audio_file['audioFileId'])
+                        file_Volume = audio_file['Volumes']
+
                         grid_out = grid_fs_bucket.open_download_stream(file_id)
                         audio_segment = AudioSegment.from_file(io.BytesIO(grid_out.read()), format="mp3")
                         
                         # Adjust volume here
                         if index < len(volume_list):
-                            audio_segment = audio_segment + (volume_list[index] - 100)  # Assuming volume_list contains values like 100 for original volume
+                            audio_segment = audio_segment + (file_Volume - 100)  # Assuming volume_list contains values like 100 for original volume
             
                         combined_audio = combined_audio.overlay(audio_segment)
                     except Exception as e:
