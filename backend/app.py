@@ -351,56 +351,6 @@ def stream_audio(file_id):
         )
     except NoFile:
         return jsonify({'message': 'File not found'}), 404
-    
-
-
-
-
-
-
-
-@app.route('/updateAudioVolume/<user_id>/<project_title>/<index>/<newVolume>', methods=['POST'])
-@jwt_required()
-def update_audio_volume(user_id, project_title, index, newVolume):
-
-    print("MUAHAHAHAHAHAHAHAHAHAHHAAHHAHHAHAHAH")
-
-    current_user_id = get_jwt_identity()
-    if str(current_user_id) != str(user_id):
-        return jsonify({'message': 'Unauthorized'}), 403
-
-    try:
-        index = int(index)  # Convert index to integer
-        newVolume = int(newVolume)  # Convert newVolume to float
-    except ValueError:
-        return jsonify({'message': 'Invalid index or volume provided'}), 400
-
-    # Check for valid volume range, adjust as needed for your application
-    if newVolume < 0 or newVolume > 1:
-        return jsonify({'message': 'Invalid volume value. Volume must be between 0 and 1.'}), 400
-
-    user = users_collection.find_one({"_id": ObjectId(user_id)})
-    if not user:
-        return jsonify({'message': 'User not found'}), 404
-
-    project = next((p for p in user.get('projects', []) if p['title'] == project_title), None)
-    if project is None:
-        return jsonify({'message': 'Project not found'}), 404
-
-    # Ensure the index is within the range of existing audio files
-    if 0 <= index < len(project.get('audioFiles', [])):
-        # Update the volume of the specified audio file
-        users_collection.update_one(
-            {'_id': ObjectId(user_id), 'projects.title': project_title},
-            {'$set': {f'projects.$.audioFiles.{index}.Volumes': newVolume}}
-        )
-        return jsonify({'message': 'Volume updated successfully'}), 200
-    else:
-        return jsonify({'message': 'Invalid audio file index'}), 404
-
-
-
-
 
 
 
@@ -424,6 +374,55 @@ def stream_project_combined_audio(user_id, project_title):
             return jsonify({'message': 'Project or combined audio not found'}), 404
     except Exception as e:
         return jsonify({'message': 'Error streaming combined audio: ' + str(e)}), 500
+    
+
+    
+
+@app.route('/updateAudioVolume/<user_id>/<project_title>/<index>/<newVolume>', methods=['GET'])
+def update_audio_volume(user_id, project_title, index, newVolume):
+
+    print("MUAHAHAHHAHAHAHAAHAHA")
+
+    try:
+        # Convert index and newVolume to their appropriate types
+        index = int(index)
+        newVolume = int(newVolume)
+
+        # Find the user by ID
+        user = users_collection.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            return jsonify({'message': 'User not found'}), 404
+
+        # Decode the project title from URL encoding
+        project_title_decoded = project_title.replace("%20", " ")
+        project = next((proj for proj in user.get('projects', []) if proj['title'] == project_title_decoded), None)
+
+        if not project:
+            return jsonify({'message': 'Project not found'}), 404
+
+        # Ensure the audio file index exists in the project
+        if 'audioFiles' in project and len(project['audioFiles']) > index:
+            # Update the volume of the specified audio file
+            audio_files = project['audioFiles']
+            audio_files[index]['Volumes'] = newVolume
+            
+            # Update the project in the database
+            users_collection.update_one(
+                {'_id': ObjectId(user_id), 'projects.title': project_title_decoded},
+                {'$set': {'projects.$.audioFiles': audio_files}}
+            )
+
+            return jsonify({'message': 'Audio volume updated successfully'}), 200
+        else:
+            return jsonify({'message': 'Invalid audio file index'}), 404
+    except ValueError:
+        # Handle case where index or newVolume can't be converted to integers
+        return jsonify({'message': 'Invalid input for index or volume'}), 400
+    except Exception as e:
+        # Catch-all for any other errors
+        return jsonify({'message': str(e)}), 500
+
+
 
 @app.route('/streamProjectAudios/<user_id>/<project_title>', methods=['GET'])
 def stream_project_audios(user_id, project_title):
@@ -450,7 +449,7 @@ def stream_project_audios(user_id, project_title):
                         grid_out = grid_fs_bucket.open_download_stream(file_id)
                         audio_segment = AudioSegment.from_file(io.BytesIO(grid_out.read()), format="mp3")
 
-                        audio_segment = audio_segment - ((audio_file['Volumes']) - 100)
+                        audio_segment = audio_segment + ((audio_file['Volumes']) - 100)
 
                         combined_audio = combined_audio.overlay(audio_segment)
                     except Exception as e:

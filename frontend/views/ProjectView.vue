@@ -13,6 +13,7 @@ const isPlaying = ref(false);
 const audioSrc = ref("");
 const combinedAudioReady = ref(false);
 const isLoadingAudio = ref(true);
+const trackVolumes = [20,40,60,100];
 
 watch(
   audioFiles,
@@ -133,8 +134,13 @@ async function fetchAudioFiles() {
       ...file,
       src: `http://127.0.0.1:5000/streamAudio/${file.audioFileId}`,
     }));
+
+    trackVolumes.value = response.data.map((file) => file.Volumes);
+
     console.log("Audio files have been fetched and processed");
-    console.log(audioFiles);
+    console.log(JSON.stringify(audioFiles,null,2));
+    console.log("Track Volumes:", trackVolumes.value);
+    console.log("Track Volume 3:", trackVolumes.value[2]);
   } catch (error) {
     console.error("Error fetching audio files:", error);
   }
@@ -168,52 +174,30 @@ async function updateTrackVolume(index, newVolume) {
 
   try {
 
-    console.log("Updating Audio in Database...")
+    console.log("Combining all audio files in the backend...");
     const volumeResponse = await axios.get(
       `http://127.0.0.1:5000/updateAudioVolume/${userId}/${encodeURIComponent(title.value)}/${indexString}/${volumeString}`,
       { headers: { Authorization: `Bearer ${accessToken}` } }
     );
+    
+    streamAllAudioFiles();
 
-    console.log("Combining all audio files in the backend...");
-    const response = await axios.get(
-      `http://127.0.0.1:5000/streamProjectAudios/${userId}/${encodeURIComponent(
-        title.value
-      )}`,
-      { headers: { Authorization: `Bearer ${accessToken}` } }
-    );
-    console.log("Audio files combined successfully: ");
-
-    const combinedAudioUrl = `http://127.0.0.1:5000/streamProjectCombinedAudio/${userId}/${encodeURIComponent(
-      title.value
-    )}`;
-    audioSrc.value = combinedAudioUrl + "?v=" + new Date().getTime(); // Adding a timestamp to prevent caching
-
-    await new Promise((resolve, reject) => {
-      const audioPlayer = document.getElementById("projectAudio");
-      audioPlayer.src = audioSrc.value; // Use the updated src with the timestamp
-
-      audioPlayer.onloadeddata = () => {
-        console.log("Audio data has loaded and is now ready to play");
-        isLoadingAudio.value = false;
-        resolve();
-      };
-
-      audioPlayer.onerror = () => {
-        console.error("Error loading combined audio");
-        reject("Error loading audio");
-      };
-
-      audioPlayer.load();
-    });
-
-    combinedAudioReady.value = true;
   } catch (error) {
     console.error("Error combining or streaming audio files:", error);
   }
 
 }
 
-
+const debouncedUpdateTrackVolume = debounce(updateTrackVolume, 500);
+function debounce(func, delay) {
+  let debounceTimer;
+  return function() {
+    const context = this;
+    const args = arguments;
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => func.apply(context, args), delay);
+  };
+}
 
 
 
@@ -361,7 +345,7 @@ export default {
                 <div class="properties">
                   <textarea v-model="audio.audioFilename"></textarea>
                   <div class="volume">
-                    <Slider :value="75" @update:modelValue="updateTrackVolume(index)" :min="0" :max="100" />
+                    <Slider :value="trackVolumes.value[index]" @update:modelValue="newVolume => debouncedUpdateTrackVolume(index, newVolume)" :min="0" :max="100" />
                     <button title="Solo Track">S</button>
                     <button title="Mute Track">M</button>
                     <input type="file" :id="'file-input-' + index" @change="(event) => updateFile(index, event)"
