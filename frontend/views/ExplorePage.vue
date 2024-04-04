@@ -328,7 +328,7 @@ export default {
       @update:selectedOptions="handleSelectedInstrumentsUpdate"
     />
     <ul>
-      <div class="track" v-for="project in filteredProjects" :key="project._id">
+      <div class="track" v-for="project in filteredProjects" :key="project._id" :style="{ position: 'relative' }">
         <div class="info">
           <h3 class="title">{{ project.title }}</h3>
           <h3 class="creator">{{ project.user }}</h3>
@@ -337,13 +337,6 @@ export default {
         <div class="likeDislike">
           <button @click="vote(project.user, project.id, 'True')" class="like">like {{ project.upvote_count }}</button>
           <button @click="vote(project.user, project.id, 'False')" class="likeDislike">dislike {{ project.downvote_count }}</button>
-        </div>
-        <div>
-          <div>
-            <p v-if="project.genres && project.genres.length > 0" class="genre">Genres: {{ project.genres.join(', ') }}</p>
-          </div><div>
-            <p v-if="project.instruments && project.instruments.length > 0" class="genre">Instruments: {{ project.instruments.join(', ') }}</p>
-          </div>
         </div>
         <button
           class="contribute"
@@ -359,9 +352,15 @@ export default {
             borderRadius: '5px',
             fontWeight: 'bold',
           }"
-        >
-          Contribute
+        > Contribute
         </button>
+        <div>
+          <div>
+            <p v-if="project.genres && project.genres.length > 0" class="genre">Genres: {{ project.genres.join(', ') }}</p>
+          </div><div>
+            <p v-if="project.instruments && project.instruments.length > 0" class="genre">Instruments: {{ project.instruments.join(', ') }}</p>
+          </div>
+        </div>
         <div v-if="errorFile == project.title && !isPlaying" class="audioError">
           Error: Unable to fetch project audio
         </div>
