@@ -46,7 +46,11 @@ grid_fs_bucket = GridFSBucket(db)
 # used to delete projects from a specific user
 if False:
     print("doing it")
-    result = users_collection.update_one({'username': "iluvemusic"}, {'$unset': {'projects': ''}})
+    # result = users_collection.update_one({'username': "iluvemusic"}, {'$unset': {'projects': ''}})
+    result = users_collection.update_one(
+        {'username': "MrDemo123"},
+        {'$pull': {'projects': {'title': '', 'description': ''}}}
+    )
     # Check if the update was successful
     if result.modified_count > 0:
         print("All projects deleted successfully")

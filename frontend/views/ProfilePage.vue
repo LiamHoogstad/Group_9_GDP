@@ -256,8 +256,8 @@ export default {
         >
           <h3>{{ project.title }}</h3>
           <p>{{ project.description }}</p>
-          <p v-if="project.genres && project.genres.length > 0" class="genre">Genres: {{ project.genres.join(', ') }}</p>
-          <p v-if="project.instruments && project.instruments.length > 0" class="genre">Instruments: {{ project.instruments.join(', ') }}</p>
+          <p v-if="Array.isArray(project.genres) && project.genres.length > 0" class="genre">Genres: {{ project.genres.join(', ')}}</p>
+          <p v-if="Array.isArray(project.instruments) && project.instruments.length > 0" class="genre">Instruments: {{ project.instruments.join(', ') }}</p>
         </div>
         <div class="project addProject" @click="showAddProjectPopup = true">
           <h3>

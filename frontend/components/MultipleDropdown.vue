@@ -8,13 +8,14 @@ export default {
         valueName: {
             type: String,
             required: true,
-        }
+        },
     },
 
     data() {
         return {
             isDropdownOpen: false,
             selectedOptions: [],
+            // selectedOptions: alreadySelectedOptions ? alreadySelectedOptions.slice() : [],
         };
     },
 

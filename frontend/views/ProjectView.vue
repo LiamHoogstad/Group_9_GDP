@@ -3,6 +3,8 @@ import { ref, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import Slider from "../components/Slider.vue";
 import HamburgerMenu from "../components/HamburgerMenu.vue";
+import { genres, instruments } from '../assets/globalVariables.js';
+import MultipleDropdown from "../components/MultipleDropdown.vue";
 import axios from "axios";
 
 const router = useRouter();
