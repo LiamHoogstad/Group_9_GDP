@@ -7,6 +7,7 @@ const audioSrc = ref("");
 const audio = new Audio();
 const isPlaying = ref(false);
 const currentProject = ref(null);
+const currentProjectUser = ref(null);
 const searchQuery = ref("");
 const errorFile = ref(null);
 
@@ -21,7 +22,7 @@ export default {
   setup() {
     const projects = ref([]);
     const playCombinedAudio = async (username, title) => {
-      if (currentProject.value === title) {
+      if (currentProject.value === title && currentProjectUser.value===username) {
         if (isPlaying.value) {
           audio.pause();
         } else {
@@ -32,7 +33,7 @@ export default {
         audio.pause();
         isPlaying.value = false;
         currentProject.value = null;
-
+        currentProjectUser.value = null;
         try {
           //console.log(username, title);
           const response = await axios.get(
@@ -46,6 +47,7 @@ export default {
           audio.play();
           isPlaying.value = true;
           currentProject.value = title;
+          currentProjectUser.value = username;
           errorFile.value=null;
         } catch (error) {
           errorFile.value = title;
@@ -53,8 +55,8 @@ export default {
         }
       }
     };
-    const isProjectPlaying = (project) => {
-      return currentProject.value === project && isPlaying.value;
+    const isProjectPlaying = (project, user) => {
+      return currentProjectUser.value===user && currentProject.value === project && isPlaying.value;
     };
 
     const fetchAllProjects = async () => {
@@ -118,7 +120,7 @@ export default {
         >
           <img
             src="../assets/Play.svg"
-            v-if="!isProjectPlaying(project.title)"
+            v-if="!isProjectPlaying(project.title, project.user)"
           />
           <img src="../assets/Pause.svg" v-else />
         </button>
