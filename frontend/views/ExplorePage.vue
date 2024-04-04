@@ -1,6 +1,7 @@
 <script>
 import { ref, computed, onMounted } from "vue";
 import axios from "axios";
+import { useRouter } from "vue-router";
 import { genres, instruments } from '../assets/globalVariables.js';
 import MultipleDropdown from "../components/MultipleDropdown.vue";
 import HamburgerMenu from "../components/HamburgerMenu.vue";
@@ -22,6 +23,7 @@ export default {
   name: "ExplorePage",
 
   setup() {
+    const router = useRouter(); // Moved inside setup()
     const projects = ref([]);
     const sortedProjects = ref([]);
     const currentSort = ref('default');
@@ -30,6 +32,27 @@ export default {
     const selectedInstruments = ref([]);
     const selectedGenres = ref([]);
     const selectedFilters = ref([]);
+    const contributeToProject = async (projectUser, projectId) => {
+      const accessToken = localStorage.getItem("userToken");
+      const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+      try {
+        const response = await axios.post(
+          `http://127.0.0.1:5000/contributeToProject`,
+          {
+            projectId: projectId,
+            projectCreator: projectUser,
+            userId: userId,
+          }
+        );
+        alert("Project copied successfully!");
+        const newProjectTitle = response.data.newProjectTitle;
+        console.log("NEW PROJECT TITLE" + newProjectTitle);
+        await clickProject(newProjectTitle); // assuming the ProjectView route expects an id parameter
+      } catch (error) {
+        console.error("Error contributing to project:", error);
+        alert(error.response?.data.message || "An error occurred");
+      }
+    };
     const playCombinedAudio = async (username, title) => {
       if (currentProject.value === title && currentProjectUser.value===username) {
         if (isPlaying.value) {
@@ -44,7 +67,6 @@ export default {
         currentProject.value = null;
         currentProjectUser.value = null;
         try {
-          //console.log(username, title);
           const response = await axios.get(
             `http://127.0.0.1:5000/explorePageAudio/${username}/${title}`,
             {
@@ -57,7 +79,7 @@ export default {
           isPlaying.value = true;
           currentProject.value = title;
           currentProjectUser.value = username;
-          errorFile.value=null;
+          errorFile.value = null;
         } catch (error) {
           errorFile.value = title;
           console.error("Error fetching audio file:", error);
@@ -98,6 +120,7 @@ export default {
           project.user_liked = user_liked;
         });
         sortedProjects.value = [...projects.value];
+        console.log(JSON.stringify(projects.value, null, 2));
       } catch (error) {
         console.error("Error fetching projects:", error);
       }
@@ -221,6 +244,20 @@ export default {
         selectedFilters.value = updatedSelectedOptions;
     }
 
+    const clickProject = async (newProjectTitle) => {
+      try {
+        console.log("trying to run");
+        // Make sure this matches the route definition in your router setup
+        router.push({
+          name: "ProjectView",
+          params: { title: newProjectTitle },
+        });
+        console.log("Project opened successfully");
+      } catch (error) {
+        console.error("Error opening project:", error);
+      }
+    };
+
     return {
       projects,
       sortedProjects,
@@ -250,6 +287,9 @@ export default {
       selectedGenres,
       selectedInstruments,
       selectedFilters,
+      searchQuery,
+      contributeToProject,
+      clickProject,
     };
   },
   components: { MultipleDropdown, HamburgerMenu }
@@ -305,7 +345,26 @@ export default {
             <p v-if="project.instruments && project.instruments.length > 0" class="genre">Instruments: {{ project.instruments.join(', ') }}</p>
           </div>
         </div>
-        <div  v-if="errorFile==project.title && !isPlaying" class="audioError">Error: Unable to fetch project audio</div>
+        <button
+          class="contribute"
+          @click="contributeToProject(project.user, project.id)"
+          :style="{
+            position: 'absolute',
+            left: '80%',
+            top: '50%',
+            transform: 'translate(-80%,-50%)',
+            backgroundColor: 'white',
+            color: '#77a4f9',
+            padding: '5px',
+            borderRadius: '5px',
+            fontWeight: 'bold',
+          }"
+        >
+          Contribute
+        </button>
+        <div v-if="errorFile == project.title && !isPlaying" class="audioError">
+          Error: Unable to fetch project audio
+        </div>
         <div class="audioPreview"></div>
         <button
           class="play"
@@ -342,21 +401,21 @@ h1 {
   border-radius: 0.5em;
   flex: 0.5;
   margin-top: 1em;
-  background-image: url('../assets/search.svg'); /* Path to your search icon */
+  background-image: url("../assets/search.svg");
   background-repeat: no-repeat;
   background-position: 8px 50%;
   background-size: 20px 20px;
   background-color: var(--colour-background);
-  margin-bottom: 1em; 
+  margin-bottom: 1em;
   font-size: medium;
   outline: none;
-  color: var(--colour-text)
+  color: var(--colour-text);
 }
 .search-input::placeholder {
   color: var(--colour-interactable);
 }
-.audioError{
-  position: relative; 
+.audioError {
+  position: relative;
   transform: translate(75%, 30%);
   color: maroon;
 }

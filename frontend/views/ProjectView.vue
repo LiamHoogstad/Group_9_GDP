@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, watch } from "vue";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import Slider from "../components/Slider.vue";
 import HamburgerMenu from "../components/HamburgerMenu.vue";
 import { genres, instruments } from '../assets/globalVariables.js';
@@ -8,6 +8,7 @@ import MultipleDropdown from "../components/MultipleDropdown.vue";
 import axios from "axios";
 
 const router = useRouter();
+const route = useRoute();
 const title = ref(router.currentRoute.value.params.title);
 const audioFiles = ref([]);
 const volume = ref(100);
@@ -16,6 +17,23 @@ const audioSrc = ref("");
 const combinedAudioReady = ref(false);
 const isLoadingAudio = ref(true);
 const trackVolumes = [20,40,60,100];
+
+// onMounted(async () => {
+//   // Assuming the project title comes from the route parameters (update accordingly)
+//   projectTitle.value = route.params.title;
+
+//   const accessToken = localStorage.getItem("userToken");
+//   if (!accessToken) {
+//     console.error("No access token found. Redirecting to login...");
+//     router.push({ name: "SignIn" });
+//     return;
+//   }
+
+//   const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+
+//   // Fetch the project by its title and the user's ID
+//   await fetchProjectData(userId, projectTitle.value);
+// });
 
 watch(
   audioFiles,
@@ -32,7 +50,6 @@ watch(
 
 const togglePlay = async () => {
   const audioPlayer = document.getElementById("projectAudio");
-
   if (isLoadingAudio.value) {
     console.log("Audio is still loading...");
     return;
@@ -61,10 +78,6 @@ const togglePlay = async () => {
     isPlaying.value = false;
   }
 };
-
-onMounted(async () => {
-  await fetchAudioFiles();
-});
 
 async function streamAllAudioFiles() {
   isLoadingAudio.value = true;
@@ -147,6 +160,10 @@ async function fetchAudioFiles() {
     console.error("Error fetching audio files:", error);
   }
 }
+
+onMounted(async () => {
+  await fetchAudioFiles();
+});
 
 function updateVolume(newVolume) {
   const volumeValue = newVolume / 100;
@@ -325,7 +342,12 @@ export default {
             <img src="../assets/Play.svg" v-if="!isPlaying" />
             <img src="../assets/Pause.svg" v-else />
           </button>
-          <Slider :value="volume" @update:modelValue="updateVolume" :min="0" :max="100" />
+          <Slider
+            :value="volume"
+            @update:modelValue="updateVolume"
+            :min="0"
+            :max="100"
+          />
 
           <audio id="projectAudio" controls style="display: none"></audio>
         </div>
@@ -339,9 +361,12 @@ export default {
         <div class="second">
           <table>
             <tr v-for="(audio, index) in audioFiles" :key="index">
-
               <td class="trackControls">
-                <button class="delete" title="Delete Track" @click="deleteAudioFile(index)">
+                <button
+                  class="delete"
+                  title="Delete Track"
+                  @click="deleteAudioFile(index)"
+                >
                   <h2>x</h2>
                 </button>
                 <div class="properties">
@@ -350,12 +375,24 @@ export default {
                     <Slider :value="trackVolumes.value[index]" @update:modelValue="newVolume => debouncedUpdateTrackVolume(index, newVolume)" :min="0" :max="100" />
                     <button title="Solo Track">S</button>
                     <button title="Mute Track">M</button>
-                    <input type="file" :id="'file-input-' + index" @change="(event) => updateFile(index, event)"
-                      accept="audio/*" style="display: none" /><button v-if="isLoadingAudio" title="Change Track"
-                      style="cursor: not-allowed">
+                    <input
+                      type="file"
+                      :id="'file-input-' + index"
+                      @change="(event) => updateFile(index, event)"
+                      accept="audio/*"
+                      style="display: none"
+                    /><button
+                      v-if="isLoadingAudio"
+                      title="Change Track"
+                      style="cursor: not-allowed"
+                    >
                       C
                     </button>
-                    <button v-else title="Change Track" @click="triggerFileInput(index)">
+                    <button
+                      v-else
+                      title="Change Track"
+                      @click="triggerFileInput(index)"
+                    >
                       C
                     </button>
                   </div>
@@ -366,20 +403,29 @@ export default {
               </td>
               <td class="trackPreview">
                 {{
-          audio.audioPreview ||
-          "QWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNM"
-        }}
+                  audio.audioPreview ||
+                  "QWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNM"
+                }}
               </td>
             </tr>
           </table>
         </div>
       </div>
-      <input type="file" id="new-file-input" @change="(event) => updateFile(audioFiles.length, event)" accept="audio/*"
-        style="display: none" />
+      <input
+        type="file"
+        id="new-file-input"
+        @change="(event) => updateFile(audioFiles.length, event)"
+        accept="audio/*"
+        style="display: none"
+      />
       <p v-if="isLoadingAudio" style="text-align: center; margin-top: 20px">
         Please wait for files to load...
       </p>
-      <button v-if="isLoadingAudio" style="margin-top: 20px; cursor: not-allowed" disabled>
+      <button
+        v-if="isLoadingAudio"
+        style="margin-top: 20px; cursor: not-allowed"
+        disabled
+      >
         Add Audio File
       </button>
       <button v-else @click="triggerNewFileInput" style="margin-top: 20px">
