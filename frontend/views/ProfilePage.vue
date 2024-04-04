@@ -3,12 +3,9 @@ import { ref, onMounted } from "vue";
 import axios from "axios";
 import blankProfilePicture from "../assets/blankProfilePicture.png";
 import { useRouter } from "vue-router";
-<<<<<<< HEAD
-import HamburgerMenu from "../components/HamburgerMenu.vue";
-=======
 import { genres, instruments } from '../assets/globalVariables.js';
 import MultipleDropdown from "../components/MultipleDropdown.vue";
->>>>>>> like_dislike_search_filter_sort_genres_instruments
+import HamburgerMenu from "../components/HamburgerMenu.vue";
 
 export default {
     name: "ProfilePage",
@@ -152,26 +149,6 @@ export default {
             }
         };
 
-<<<<<<< HEAD
-    return {
-      username,
-      projects,
-      addProject,
-      showAddProjectPopup,
-      newProjectTitle,
-      newProjectDescription,
-      onClickFileInput,
-      fileInput,
-      profilePictureUrl,
-      onMounted,
-      uploadProfilePicture,
-      clickProject,
-      addProjectToDB,
-      fetchUsername,
-    };
-  },
-  components: {HamburgerMenu}
-=======
         const handleSelectedInstrumentsUpdate = async (updatedSelectedOptions) => {
             selectedInstruments.value = updatedSelectedOptions;
         }
@@ -203,15 +180,14 @@ export default {
             handleSelectedGenresUpdate,
         };
     },
-    components: { MultipleDropdown }
->>>>>>> like_dislike_search_filter_sort_genres_instruments
+    components: { MultipleDropdown, HamburgerMenu }
 };
-
 </script>
 
 <template>
   <!-- Fontawesome CDN Link -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+  <HamburgerMenu />
   <div class="profilePage">
     <div class="profileContainer">
       <div class="profilePictureContainer">
@@ -293,9 +269,6 @@ export default {
         </div>
       </div>
     </div>
-  </div>
-  <div class="right">
-    <HamburgerMenu />
   </div>
 </template>
 
