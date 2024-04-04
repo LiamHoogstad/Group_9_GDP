@@ -1,6 +1,7 @@
 <script>
 import { ref, computed, onMounted } from "vue";
 import axios from "axios";
+import HamburgerMenu from "../components/HamburgerMenu.vue";
 
 const audioSrc = ref("");
 const audio = new Audio();
@@ -86,14 +87,19 @@ export default {
       searchQuery
     };
   },
+  components: {HamburgerMenu}
 };
 </script>
 
 <template>
   <div class="explorePage">
     <h1>Explore</h1>
+
+    <HamburgerMenu />
+
       <input type="text" v-model="searchQuery" class="search-input" placeholder="Search for projects by name...">
     <ul>
+      
       <div class="track" v-for="project in filteredProjects">
         <div class="info">
           <h3 class="title">{{ project.title }}</h3>
@@ -119,6 +125,7 @@ export default {
       </div>
     </ul>
   </div>
+  
 </template>
 
 <style scoped>

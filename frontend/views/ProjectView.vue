@@ -314,7 +314,7 @@ export default {
         <h2 id="project_name" v-bind:title="title">{{ title }}</h2>
       </div>
       <div class="right">
-        <HamburgerMenu />
+       <!--  <HamburgerMenu /> -->
       </div>
       <div class="centre">
         <div id="playbackControls">

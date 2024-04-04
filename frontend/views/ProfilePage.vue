@@ -3,6 +3,7 @@ import { ref, onMounted } from "vue";
 import axios from "axios";
 import blankProfilePicture from "../assets/blankProfilePicture.png";
 import { useRouter } from "vue-router";
+import HamburgerMenu from "../components/HamburgerMenu.vue";
 
 export default {
   name: "ProfilePage",
@@ -162,7 +163,9 @@ export default {
       fetchUsername,
     };
   },
+  components: {HamburgerMenu}
 };
+
 </script>
 
 <template>
@@ -232,6 +235,9 @@ export default {
         </div>
       </div>
     </div>
+  </div>
+  <div class="right">
+    <HamburgerMenu />
   </div>
 </template>
 
