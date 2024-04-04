@@ -14,6 +14,7 @@ from datetime import timedelta
 from werkzeug.utils import secure_filename
 import datetime
 from pydub import AudioSegment
+from datetime import datetime
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -42,6 +43,19 @@ db = client.MusiCollab
 users_collection = db.users 
 grid_fs_bucket = GridFSBucket(db)
 
+# used to delete projects from a specific user
+if False:
+    print("doing it")
+    # result = users_collection.update_one({'username': "iluvemusic"}, {'$unset': {'projects': ''}})
+    result = users_collection.update_one(
+        {'username': "MrDemo123"},
+        {'$pull': {'projects': {'title': '', 'description': ''}}}
+    )
+    # Check if the update was successful
+    if result.modified_count > 0:
+        print("All projects deleted successfully")
+    else:
+        print("User not found or no projects deleted")
 
 # Routes
 @app.route('/')
@@ -192,22 +206,25 @@ def fetch_Username(user_id):
     else:
         return jsonify({'message': 'User not found'}), 404
 
-@app.route('/addProject', methods=['POST'])
-@jwt_required()
-def add_project():
-    current_user_id = get_jwt_identity()
+@app.route('/addProject/<user_id>', methods=['POST'])
+def add_project(user_id):
     data = request.json
+    print(data.get('genres') == '')
+    print(data.get('genres'))
     project = {
         'id': data.get('id'),
         'title': data.get('title'),
-        'description': data.get('description')
+        'description': data.get('description'),
+        'date': datetime.now(),
     }
-    
+    if data.get('genres') != '':
+        project['genres'] = data.get('genres').split(',')
+    if data.get('instruments') != '':
+        project['instruments'] = data.get('instruments').split(',')
     users_collection.update_one(
-        {"_id": ObjectId(current_user_id)},
+        {"_id": ObjectId(user_id)},
         {"$push": {"projects": project}}
     )
-    
     return jsonify({"success": True, "message": "Project added successfully"})
 
 @app.route('/getProjects/<user_id>', methods=['GET'])
@@ -239,7 +256,8 @@ def get_all_projects():
     #print(all_projects)
     #print(type(all_projects))
     if all_projects:
-        return  jsonify(all_projects), 200
+        # print(all_projects)
+        return jsonify(all_projects), 200
     else:
         return jsonify({"message": "No projects available"}), 404
 @app.route('/uploadAudioToProject/<user_id>/<project_title>/<index>', methods=['POST'])
@@ -545,6 +563,53 @@ def play_explore_page_audio(username, project_title):
             return jsonify({'message': 'Project or combined audio not found'}), 404
     except Exception as e:
         return jsonify({'message': 'Error streaming combined audio: ' + str(e)}), 500
+
+@app.route('/upvoteProject/<current_user_id>/<username>/<project_id>/<like>', methods=['POST'])
+def upvote_project(current_user_id, username, project_id, like):
+    like = like == 'True'
+    project_id = int(project_id)
+    try:
+        project_user = users_collection.find_one({'username': username})
+        if project_user:
+            project = next((project for project in project_user.get('projects', []) if int(project['id']) == int(project_id)), None)
+            if project:
+                upvote_data = project.get('projectUpvote', [])
+                user_upvote = next((data for data in upvote_data if data['user'] == current_user_id), None)
+                if user_upvote:
+                    # need to change the vote
+                    if user_upvote.get('like') != like:
+                        user_upvote['like'] = like
+                        user_upvote['date'] = datetime.now()
+                        # update in database
+                        users_collection.update_one(
+                            {'username': username, 'projects.id': project_id, 'projects.projectUpvote.user': current_user_id},
+                            {'$set': {'projects.$.projectUpvote.$': user_upvote}}
+                        )
+                        return jsonify({"success": True, "message": "Vote successfully changed"})
+                    # need to delete the vote
+                    else:
+                        users_collection.update_one(
+                            {'username': username, 'projects.id': project_id},
+                            { "$pull": { "projects.$.projectUpvote": { "user": current_user_id } } }
+                        )
+                        return jsonify({"success": True, "message": "Vote successfully deleted"})
+                else:
+                    project_user_id = project_user.get('_id')
+                    data = {
+                        'user': current_user_id,
+                        'date': datetime.now(),
+                        'like': like
+                    }
+                    users_collection.update_one(
+                        {'_id': ObjectId(project_user_id), 'projects.id': project_id},
+                        {'$push': {'projects.$.projectUpvote': data}}
+                    )
+                    return jsonify({"success": True, "message": "Vote added successfully"})
+            else:
+                return jsonify({'message': 'Project not found'}), 404
+        return jsonify({'message': 'User not found'}), 404
+    except Exception as e:
+        return jsonify({'message': 'Error upvoting project: ' + str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
