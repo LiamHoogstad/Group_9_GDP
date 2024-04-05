@@ -386,6 +386,7 @@ export default {
 <style scoped>
 .explorePage {
   text-align: center;
+  min-height: 100vw;
   background-color: var(--colour-panel-soft);
   padding-bottom: 1em;
 }
