@@ -329,42 +329,44 @@ export default {
     />
     <ul>
       <div class="track" v-for="project in filteredProjects" :key="project._id" :style="{ position: 'relative' }">
-        <div class="info">
+        <div class="leftPanel">
           <h3 class="title">{{ project.title }}</h3>
-          <h3 class="creator">{{ project.user }}</h3>
-        </div>
-        <h3 class="description">{{ project.description }}</h3>
-        <div class="likeDislike">
-          <button @click="vote(project.user, project.id, 'True')" class="like">like {{ project.upvote_count }}</button>
-          <button @click="vote(project.user, project.id, 'False')" class="likeDislike">dislike {{ project.downvote_count }}</button>
-        </div>
-        <button
-          class="contribute"
-          @click="contributeToProject(project.user, project.id)"
-          :style="{
-            position: 'absolute',
-            left: '80%',
-            top: '50%',
-            transform: 'translate(-80%,-50%)',
-            backgroundColor: 'white',
-            color: '#77a4f9',
-            padding: '5px',
-            borderRadius: '5px',
-            fontWeight: 'bold',
-          }"
-        > Contribute
-        </button>
-        <div>
-          <div>
-            <p v-if="project.genres && project.genres.length > 0" class="genre">Genres: {{ project.genres.join(', ') }}</p>
-          </div><div>
-            <p v-if="project.instruments && project.instruments.length > 0" class="genre">Instruments: {{ project.instruments.join(', ') }}</p>
+          <div class="attributes">
+            <div class="info">
+              <h3 class="creator">{{ project.user }}</h3>
+              <div class="description">
+                <h3>{{ project.description }}</h3>
+                <div>
+                  <p v-if="project.genres && project.genres.length > 0" v-for="genre in project.genres" class="genre">{{ genre }}</p>
+                  <p v-if="project.instruments && project.instruments.length > 0" v-for="instrument in project.instruments" class="genre">{{ instrument }}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div v-if="errorFile == project.title && !isPlaying" class="audioError">
+            Error: Unable to fetch project audio
           </div>
         </div>
-        <div v-if="errorFile == project.title && !isPlaying" class="audioError">
-          Error: Unable to fetch project audio
+        
+        <div class="interact">
+          <button
+            class="contribute"
+            @click="contributeToProject(project.user, project.id)"
+            :style="{
+              backgroundColor: 'white',
+              color: '#77a4f9',
+              padding: '5px',
+              borderRadius: '5px',
+              fontWeight: 'bold',
+            }"
+          > Contribute
+          </button>
+          <div class="likeDislike">
+            <button @click="vote(project.user, project.id, 'True')" class="like"><img src="../assets/Like.svg"/> {{ project.upvote_count }}</button>
+            <button @click="vote(project.user, project.id, 'False')" class="dislike"><img src="../assets/Dislike.svg"/> {{ project.downvote_count }}</button>
+          </div>
         </div>
-        <div class="audioPreview"></div>
         <button
           class="play"
           @click="playCombinedAudio(project.user, project.title)"
@@ -383,9 +385,9 @@ export default {
 
 <style scoped>
 .explorePage {
-  height: 100vh;
   text-align: center;
   background-color: var(--colour-panel-soft);
+  padding-bottom: 1em;
 }
 
 h1 {
@@ -414,63 +416,81 @@ h1 {
   color: var(--colour-interactable);
 }
 .audioError {
-  position: relative;
-  transform: translate(75%, 30%);
   color: maroon;
 }
 
 .track {
-  background-color: var(--colour-interactable);
+  background-color: var(--colour-background);
   color: var(--colour-background);
+  width: 50%;
   text-align: left;
   display: flex;
+  align-items: center;
   padding: 0.5em;
-  margin: 0 1em 1em 1em;
+  margin: 0 auto 1em auto;
   border-radius: 1em;
+  overflow: hidden;
+  box-shadow: 0 0 0.75em 0.25em var(--colour-dropshadow);
 }
 
-.track .info .title {
+.track .leftPanel {
+  width: 60%;
+  align-self: flex-start;
+  margin-right: 0.75em;
+  overflow: hidden;
+  background-color: var(--colour-interactable);
+  box-shadow: -1em 0 0 1.75em var(--colour-interactable);
+}
+
+.track .title {
   font-family: "Delta Gothic One";
 }
+
+.track .attributes {
+  display: flex;
+}
+
+.track .info {
+  flex: 1;
+}
+
 .track .info .creator {
   font-style: italic;
+  font-weight: 600;
 }
 
 .track .description {
-  font-size: medium;
+  font-size: smaller;
   word-wrap: break-word;
   color: var(--colour-text);
   padding: 0 0.5em 0 0.5em;
-  margin-left: 0.5em;
-  flex: 0.5;
+  margin-top: 0.25em;
+  flex: 1;
+  align-self: stretch;
   border-radius: 0.5em;
   background-color: var(--colour-background);
 }
 
-.track .likeDislike {
-  display: flex;
-  flex-direction: column;
-}
-
 .track .likeDislike button {
-  color: var(--colour-interactable);
-  background-color: var(--colour-background);
-  padding: 0 0.25em 0 0.25em;
-  margin-left: 0.5em;
+  color: var(--colour-background);
+  background-color: var(--colour-interactable);
+  padding: 0.3em 0 0.3em 0;
   border-radius: 0.25em;
+  width: 3em;
 }
-
 
 .track .likeDislike button.like {
-  margin-bottom: 0.5em;
+  margin-right: 0.5em;
 }
 
-.track .likeDislike button {
-  color: var(--colour-interactable);
-  background-color: var(--colour-background);
-  font-weight: 600;
-  padding: 0 0.25em 0 0.25em;
-  border-radius: 0.25em;
+.track .likeDislike button img {
+  height: 1em;
+  color: var(--colour-background);
+}
+
+.track .likeDislike button.dislike img {
+  position: relative;
+  top: 0.3em;
 }
 
 .track .audioPreview {
@@ -478,13 +498,30 @@ h1 {
 }
 
 .track .play {
-  margin-right: 0.5em;
+  margin: 0 auto 0 1em;
+  filter: invert(40%) sepia(42%) saturate(559%) hue-rotate(182deg) brightness(100%) contrast(96%);
+}
+
+.track .interact {
+  text-align: center;
+  margin: 0 auto 0 auto;
+}
+
+.track .interact button.contribute {
+  width: 100%;
+  margin-bottom: 0.5em;
+  color: var(--colour-background) !important;
+  background-color: var(--colour-interactable) !important;
 }
 
 .genre {
   display: inline-block;
-  margin-right: 5px;
-  margin-left: 10px;
+  margin: 0.25em 0.25em 0.25em 0;
+  font-weight: 600;
+  color: var(--colour-background);
+  background-color: var(--colour-interactable);
+  padding: 0 0.25em 0 0.25em;
+  border-radius: 0.5em;
 }
 
 .search-input {
@@ -506,5 +543,13 @@ h1 {
 }
 .search-input::placeholder {
   color: var(--colour-interactable);
+}
+
+@media (max-width: 900px) {
+  
+.track {
+  width: 90%;
+  margin: 0 auto 1em auto;
+}
 }
 </style>
