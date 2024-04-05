@@ -14,6 +14,7 @@ const audioFiles = ref([]);
 const volume = ref(100);
 const isPlaying = ref(false);
 const audioSrc = ref("");
+const comment = ref("");
 const combinedAudioReady = ref(false);
 const isLoadingAudio = ref(true);
 const trackVolumes = [20,40,60,100];
@@ -428,9 +429,26 @@ export default {
       >
         Add Audio File
       </button>
-      <button v-else @click="triggerNewFileInput" style="margin-top: 20px">
-        Add Audio File
-      </button>
+      <div style="margin-top: 50px;">
+        <h2 style="font-family: 'Delta Gothic One'" >Comments</h2>
+    </div>
+      <div style="margin-top: 10px;justify-content: center; display: flex; align-items: center;">
+        
+        <textarea type="text" v-model="comment" class="addComment" placeholder="Comment..."/>
+        <button @click="SubmitComment">Post</button>
+      </div>
+      <div>
+    <ul>
+      <div class="comments" v-for="index in 10">
+        <div class="box">
+          <h3 class="user" style="font-weight: bold;">{{ "Username"}}</h3>
+        </div>
+        <div class="box">
+          <h3 class="description">{{ "SO GROOVY!!!" }}</h3>
+        </div>
+      </div>
+    </ul>
+    </div>
     </div>
   </div>
 </template>
@@ -524,6 +542,47 @@ div.first {
   color: var(--colour-interactable);
 }
 
+.addComment {
+  width: 50%;
+  padding: 0.5em 2em 0.5em 2em;
+  border: 0px solid var(--colour-interactable);
+  border-radius: 0.5em;
+  flex: 0.5;
+  margin-top: 1em;
+  background-image: url("../assets/comment.png");
+  background-repeat: no-repeat;
+  background-position: 5px 20%;
+  background-size: 20px 20px;
+  background-color: var(--colour-panel-soft);
+  margin-bottom: 1em;
+  font-size: medium;
+  outline: none;
+  height: 70px; 
+  resize: vertical;
+  overflow-y: auto;
+  color: var(--colour-text);
+}
+.addComment::placeholder {
+  color: var(--colour-interactable);
+}
+
+.comments {
+  background-color: var(--colour-panel-soft);
+  color: var(--colour-text);
+  text-align: left;
+  display: flex;
+  padding: 0.5em;
+  margin: 0 1em 1em 1em;
+  border-radius: 1em;
+  flex-direction: column; /* Change flex-direction to column */
+  max-height: 200px; /* Set a maximum height for the comments box */
+  overflow-y: auto; 
+}
+
+.comments .box{
+  font-family: "Fredoka";
+  font-size: 12px;
+}
 .trackControls button.record {
   margin: 0.5em 0.5em 0.5em 0;
   padding: 0 0.5em 0 0.5em;
