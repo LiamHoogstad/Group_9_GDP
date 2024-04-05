@@ -360,6 +360,9 @@ export default {
           </div><div>
             <p v-if="project.instruments && project.instruments.length > 0" class="genre">Instruments: {{ project.instruments.join(', ') }}</p>
           </div>
+          <div>
+            <p>{{ project.date }}</p>
+          </div>
         </div>
         <div v-if="errorFile == project.title && !isPlaying" class="audioError">
           Error: Unable to fetch project audio
