@@ -419,6 +419,10 @@ h1 {
   color: maroon;
 }
 
+.explorePage {
+  height: 100vw;
+}
+
 .track {
   background-color: var(--colour-background);
   color: var(--colour-background);
