@@ -14,6 +14,7 @@ from datetime import timedelta
 from werkzeug.utils import secure_filename
 from datetime import datetime
 from pydub import AudioSegment
+from datetime import datetime
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -42,6 +43,19 @@ db = client.MusiCollab
 users_collection = db.users 
 grid_fs_bucket = GridFSBucket(db)
 
+# used to delete projects from a specific user
+if False:
+    print("doing it")
+    # result = users_collection.update_one({'username': "iluvemusic"}, {'$unset': {'projects': ''}})
+    result = users_collection.update_one(
+        {'username': "MrDemo123"},
+        {'$pull': {'projects': {'title': '', 'description': ''}}}
+    )
+    # Check if the update was successful
+    if result.modified_count > 0:
+        print("All projects deleted successfully")
+    else:
+        print("User not found or no projects deleted")
 
 # Routes
 @app.route('/')
@@ -192,22 +206,25 @@ def fetch_Username(user_id):
     else:
         return jsonify({'message': 'User not found'}), 404
 
-@app.route('/addProject', methods=['POST'])
-@jwt_required()
-def add_project():
-    current_user_id = get_jwt_identity()
+@app.route('/addProject/<user_id>', methods=['POST'])
+def add_project(user_id):
     data = request.json
+    print(data.get('genres') == '')
+    print(data.get('genres'))
     project = {
         'id': data.get('id'),
         'title': data.get('title'),
-        'description': data.get('description')
+        'description': data.get('description'),
+        'date': datetime.now(),
     }
-    
+    if data.get('genres') != '':
+        project['genres'] = data.get('genres').split(',')
+    if data.get('instruments') != '':
+        project['instruments'] = data.get('instruments').split(',')
     users_collection.update_one(
-        {"_id": ObjectId(current_user_id)},
+        {"_id": ObjectId(user_id)},
         {"$push": {"projects": project}}
     )
-    
     return jsonify({"success": True, "message": "Project added successfully"})
 
 @app.route('/getProjects/<user_id>', methods=['GET'])
@@ -218,30 +235,32 @@ def get_projects(user_id):
     else:
         return jsonify({"message": "User not found or no projects available"}), 404
 
+from bson import ObjectId  # Make sure to import ObjectId from bson
+
 @app.route('/getAllProjects', methods=['GET'])
 def get_all_projects():
     all_projects = []
     # Query the database to retrieve all users and their projects
-    for user in users_collection.find({}, {'projects': 1}):
+    for user in users_collection.find({}, {'projects': 1, 'username': 1}):
         if user:
-            #print(user)
             for project in user.get('projects', []):
                 project_modified = project.copy()
-                username = users_collection.find_one({'_id': user['_id']})
-                project_modified['user']=username.get('username')
+                project_modified['user'] = user.get('username')
+                # Convert ObjectId to string using the str function
+                project_modified['userId'] = str(user['_id'])
                 if 'audioFiles' in project:
                     del project_modified['audioFiles']
-                    #print(project_modified)
                 if 'combinedAudioId' in project:
                     del project_modified['combinedAudioId']
                 all_projects.append(project_modified)
 
-    #print(all_projects)
-    #print(type(all_projects))
     if all_projects:
-        return  jsonify(all_projects), 200
+        # print(all_projects)
+        return jsonify(all_projects), 200
     else:
         return jsonify({"message": "No projects available"}), 404
+
+    
 @app.route('/uploadAudioToProject/<user_id>/<project_title>/<index>', methods=['POST'])
 @jwt_required()
 def upload_audio_to_project(user_id, project_title, index):
@@ -352,6 +371,10 @@ def stream_audio(file_id):
     except NoFile:
         return jsonify({'message': 'File not found'}), 404
 
+
+
+
+
 @app.route('/streamProjectCombinedAudio/<user_id>/<project_title>', methods=['GET'])
 def stream_project_combined_audio(user_id, project_title):
     try:
@@ -370,6 +393,55 @@ def stream_project_combined_audio(user_id, project_title):
             return jsonify({'message': 'Project or combined audio not found'}), 404
     except Exception as e:
         return jsonify({'message': 'Error streaming combined audio: ' + str(e)}), 500
+    
+
+    
+
+@app.route('/updateAudioVolume/<user_id>/<project_title>/<index>/<newVolume>', methods=['GET'])
+def update_audio_volume(user_id, project_title, index, newVolume):
+
+    print("MUAHAHAHHAHAHAHAAHAHA")
+
+    try:
+        # Convert index and newVolume to their appropriate types
+        index = int(index)
+        newVolume = int(newVolume)
+
+        # Find the user by ID
+        user = users_collection.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            return jsonify({'message': 'User not found'}), 404
+
+        # Decode the project title from URL encoding
+        project_title_decoded = project_title.replace("%20", " ")
+        project = next((proj for proj in user.get('projects', []) if proj['title'] == project_title_decoded), None)
+
+        if not project:
+            return jsonify({'message': 'Project not found'}), 404
+
+        # Ensure the audio file index exists in the project
+        if 'audioFiles' in project and len(project['audioFiles']) > index:
+            # Update the volume of the specified audio file
+            audio_files = project['audioFiles']
+            audio_files[index]['Volumes'] = newVolume
+            
+            # Update the project in the database
+            users_collection.update_one(
+                {'_id': ObjectId(user_id), 'projects.title': project_title_decoded},
+                {'$set': {'projects.$.audioFiles': audio_files}}
+            )
+
+            return jsonify({'message': 'Audio volume updated successfully'}), 200
+        else:
+            return jsonify({'message': 'Invalid audio file index'}), 404
+    except ValueError:
+        # Handle case where index or newVolume can't be converted to integers
+        return jsonify({'message': 'Invalid input for index or volume'}), 400
+    except Exception as e:
+        # Catch-all for any other errors
+        return jsonify({'message': str(e)}), 500
+
+
 
 @app.route('/streamProjectAudios/<user_id>/<project_title>', methods=['GET'])
 def stream_project_audios(user_id, project_title):
@@ -395,6 +467,9 @@ def stream_project_audios(user_id, project_title):
                         file_id = ObjectId(audio_file['audioFileId'])
                         grid_out = grid_fs_bucket.open_download_stream(file_id)
                         audio_segment = AudioSegment.from_file(io.BytesIO(grid_out.read()), format="mp3")
+
+                        audio_segment = audio_segment + ((audio_file['Volumes']) - 100)
+
                         combined_audio = combined_audio.overlay(audio_segment)
                     except Exception as e:
                         print(f"Error processing file {audio_file['audioFileId']}: {e}")
@@ -489,6 +564,98 @@ def play_explore_page_audio(username, project_title):
             return jsonify({'message': 'Project or combined audio not found'}), 404
     except Exception as e:
         return jsonify({'message': 'Error streaming combined audio: ' + str(e)}), 500
+
+@app.route('/upvoteProject/<current_user_id>/<username>/<project_id>/<like>', methods=['POST'])
+def upvote_project(current_user_id, username, project_id, like):
+    like = like == 'True'
+    project_id = int(project_id)
+    try:
+        project_user = users_collection.find_one({'username': username})
+        if project_user:
+            project = next((project for project in project_user.get('projects', []) if int(project['id']) == int(project_id)), None)
+            if project:
+                upvote_data = project.get('projectUpvote', [])
+                user_upvote = next((data for data in upvote_data if data['user'] == current_user_id), None)
+                if user_upvote:
+                    # need to change the vote
+                    if user_upvote.get('like') != like:
+                        user_upvote['like'] = like
+                        user_upvote['date'] = datetime.now()
+                        # update in database
+                        users_collection.update_one(
+                            {'username': username, 'projects.id': project_id, 'projects.projectUpvote.user': current_user_id},
+                            {'$set': {'projects.$.projectUpvote.$': user_upvote}}
+                        )
+                        return jsonify({"success": True, "message": "Vote successfully changed"})
+                    # need to delete the vote
+                    else:
+                        users_collection.update_one(
+                            {'username': username, 'projects.id': project_id},
+                            { "$pull": { "projects.$.projectUpvote": { "user": current_user_id } } }
+                        )
+                        return jsonify({"success": True, "message": "Vote successfully deleted"})
+                else:
+                    project_user_id = project_user.get('_id')
+                    data = {
+                        'user': current_user_id,
+                        'date': datetime.now(),
+                        'like': like
+                    }
+                    users_collection.update_one(
+                        {'_id': ObjectId(project_user_id), 'projects.id': project_id},
+                        {'$push': {'projects.$.projectUpvote': data}}
+                    )
+                    return jsonify({"success": True, "message": "Vote added successfully"})
+            else:
+                return jsonify({'message': 'Project not found'}), 404
+        return jsonify({'message': 'User not found'}), 404
+    except Exception as e:
+        return jsonify({'message': 'Error upvoting project: ' + str(e)}), 500
+    
+@app.route('/contributeToProject', methods=['POST'])
+def contribute_to_project():
+    data = request.json
+    project_id = int(data.get('projectId'))
+    user_id = ObjectId(data.get('userId'))
+    creator_username = data.get('projectCreator')
+
+    project_to_copy = None
+    project_creator = users_collection.find_one({'username': creator_username})
+
+    if not project_creator:
+        return jsonify({"message": "Project creator not found"}), 404
+
+    for project in project_creator.get('projects', []):
+        if project.get('id') == project_id:
+            # Remove the creator's user_id before copying
+            project_to_copy = project.copy()
+            if 'user_id' in project_to_copy:
+                del project_to_copy['user_id']
+            break
+
+    if not project_to_copy:
+        return jsonify({"message": "Project not found"}), 404
+
+    if project_creator['_id'] == user_id:
+        return jsonify({"message": "Cannot copy your own project"}), 400
+
+    update_result = users_collection.update_one(
+        {'_id': user_id},
+        {'$push': {'projects': project_to_copy}}
+    )
+
+    if update_result.modified_count == 0:
+        return jsonify({"message": "Failed to copy project"}), 500
+
+    # Retrieve the updated user document to get the index of the newly added project
+    updated_user = users_collection.find_one({'_id': user_id})
+    new_project_index = len(updated_user['projects']) - 1
+    new_project_title = updated_user['projects'][new_project_index]['title']
+
+    return jsonify({
+        "message": "Project copied successfully",
+        "newProjectTitle": new_project_title  # Send the index of the new project
+    }), 200
 
 if __name__ == '__main__':
     app.run(debug=True)
