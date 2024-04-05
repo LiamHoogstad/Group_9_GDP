@@ -61,6 +61,7 @@ button#hamburger img {
   background: var(--colour-interactable);
   font-family: "Delta Gothic One";
   transition: all 0.2s;
+  z-index: 1000;
 }
 
 #drawer ul {
