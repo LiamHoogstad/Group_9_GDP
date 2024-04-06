@@ -301,9 +301,24 @@ export default {
     <h1>Explore</h1>
     <HamburgerMenu />
     <input type="text" v-model="searchQuery" class="search-input" placeholder="Search for projects by name...">
-    <div>
-      <select @change="setSort($event.target.value)" class="like">
-        <option value="default">Default View</option>
+    <div class="dropdowns">
+      <MultipleDropdown
+        :options="filters"
+        valueName="Filters"
+        @update:selectedOptions="handleSelectedFiltersUpdate"
+      />
+      <MultipleDropdown
+        :options="genres"
+        valueName="Genres"
+        @update:selectedOptions="handleSelectedGenresUpdate"
+      />
+      <MultipleDropdown
+        :options="instruments"
+        valueName="Instruments"
+        @update:selectedOptions="handleSelectedInstrumentsUpdate"
+      />
+      <select @change="setSort($event.target.value)" class="sort">
+        <option value="default">...Sort by</option>
         <option value="mostLiked">Sort by most liked</option>
         <option value="leastLiked">Sort by least liked</option>
         <option value="mostPopular">Sort by most popular</option>
@@ -312,21 +327,6 @@ export default {
         <option value="user">Sort by user</option>
       </select>
     </div>
-    <MultipleDropdown
-      :options="filters"
-      valueName="Filters"
-      @update:selectedOptions="handleSelectedFiltersUpdate"
-    />
-    <MultipleDropdown
-      :options="genres"
-      valueName="Genres"
-      @update:selectedOptions="handleSelectedGenresUpdate"
-    />
-    <MultipleDropdown
-      :options="instruments"
-      valueName="Instruments"
-      @update:selectedOptions="handleSelectedInstrumentsUpdate"
-    />
     <ul>
       <div class="track" v-for="project in filteredProjects" :key="project._id" :style="{ position: 'relative' }">
         <div class="leftPanel">
@@ -341,11 +341,16 @@ export default {
                   <p v-if="project.instruments && project.instruments.length > 0" v-for="instrument in project.instruments" class="genre">{{ instrument }}</p>
                 </div>
               </div>
+              <div class="audioError" :style="{
+                  maxHeight: errorFile == project.title && !isPlaying ? '5em' : '0',
+                  // transform: errorFile == project.title && !isPlaying ? 'ScaleY(1)' : 'ScaleY(0)'
+                  padding: errorFile == project.title && !isPlaying ? '0.2em 0.5em 0.25em 0.5em' : '0',
+                  marginTop: errorFile == project.title && !isPlaying ? '0.25em' : '0',
+                  color: errorFile == project.title && !isPlaying ? 'var(--colour-background)' : '#00000000'
+                }">
+                  <div v-if="errorFile == project.title && !isPlaying">Error: Unable to fetch project audio</div>
+                </div>
             </div>
-          </div>
-          
-          <div v-if="errorFile == project.title && !isPlaying" class="audioError">
-            Error: Unable to fetch project audio
           </div>
         </div>
         
@@ -412,12 +417,47 @@ h1 {
   font-size: medium;
   outline: none;
   color: var(--colour-text);
+  transition: box-shadow 200ms;
+}
+.search-input:focus {
+  box-shadow: 0em 0.05em 0.5em 0.01em var(--colour-dropshadow);
 }
 .search-input::placeholder {
   color: var(--colour-interactable);
 }
-.audioError {
-  color: maroon;
+
+.dropdowns {
+  display: flex;
+  justify-content: center;
+  width: 50%;
+  margin: 0 auto 0 auto;
+}
+
+.dropdowns .multiple-dropdown {
+  margin: 0.5em;
+}
+
+.dropdowns .sort{
+  text-align-last: right;
+  direction: rtl;
+  margin-left: auto;
+  color: var(--colour-text);
+  border-radius: 0.5em;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.dropdowns .sort * {
+  border: none;
+  background-color: var(--colour-background);
+}
+
+.dropdowns option:checked,
+.dropdowns option:hover {
+  background-color: var(--colour-background);
+  color: var(--colour-text);
 }
 
 .track {
@@ -431,7 +471,8 @@ h1 {
   margin: 0 auto 1em auto;
   border-radius: 1em;
   overflow: hidden;
-  box-shadow: 0 0 0.75em 0.25em var(--colour-dropshadow);
+  transition: box-shadow 300ms;
+  box-shadow: 0em 0.05em 0.5em 0.01em var(--colour-dropshadow);
 }
 
 .track .leftPanel {
@@ -440,7 +481,7 @@ h1 {
   margin-right: 0.75em;
   overflow: hidden;
   background-color: var(--colour-interactable);
-  box-shadow: -1em 0 0 1.75em var(--colour-interactable);
+  box-shadow: -11em 0 0 11.75em var(--colour-interactable);
 }
 
 .track .title {
@@ -464,12 +505,22 @@ h1 {
   font-size: smaller;
   word-wrap: break-word;
   color: var(--colour-text);
-  padding: 0 0.5em 0 0.5em;
+  padding-left: 0.25em;
   margin-top: 0.25em;
   flex: 1;
   align-self: stretch;
   border-radius: 0.5em;
   background-color: var(--colour-background);
+}
+
+.audioError {
+  color: var(--colour-background);
+  background-color: var(--colour-warning);
+  width: fit-content;
+  line-height: 1em;
+  padding: 0.2em 0.5em 0.25em 0.5em;
+  border-radius: 0.5em;
+  transition: all 250ms;
 }
 
 .track .likeDislike button {
@@ -491,7 +542,7 @@ h1 {
 
 .track .likeDislike button.dislike img {
   position: relative;
-  top: 0.3em;
+  top: 0.2em;
 }
 
 .track .audioPreview {
@@ -547,10 +598,12 @@ h1 {
 }
 
 @media (max-width: 900px) {
-  
-.track {
-  width: 90%;
-  margin: 0 auto 1em auto;
-}
+  .track {
+    width: 90%;
+    margin: 0 auto 1em auto;
+  }
+  .dropdowns {
+    width: 90%;
+  }
 }
 </style>
