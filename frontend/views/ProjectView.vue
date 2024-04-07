@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted, watch, computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import Slider from "../components/Slider.vue";
 import HamburgerMenu from "../components/HamburgerMenu.vue";
@@ -18,7 +18,6 @@ const audioSrc = ref("");
 const combinedAudioReady = ref(false);
 const isLoadingAudio = ref(true);
 const trackVolumes = [20,40,60,100];
-const trackMutes = []
 
 // onMounted(async () => {
 //   // Assuming the project title comes from the route parameters (update accordingly)
@@ -151,7 +150,6 @@ async function fetchAudioFiles() {
       console.log("No audio files were found for this user.");
       audioFiles.value = [];
       trackVolumes.value = [];
-      trackMutes.value = [];
     } else {
       audioFiles.value = response.data.map((file) => ({
         ...file,
@@ -159,12 +157,10 @@ async function fetchAudioFiles() {
       }));
 
       trackVolumes.value = response.data.map((file) => file.Volumes);
-      trackMutes.value = response.data.map((file) => file.Mute);
 
       console.log("Audio files have been fetched and processed");
       console.log(JSON.stringify(audioFiles,null,2));
       console.log("Track Volumes:", trackVolumes.value);
-      console.log("Track Mutes:", trackMutes.value);
       console.log("Track Volume 3:", trackVolumes.value[2]);
 
     }
@@ -197,7 +193,6 @@ async function fetchAudioFiles() {
       // Optionally, clear or set default values if no data is found
       audioFiles.value = [];
       trackVolumes.value = [];
-      trackMutes.value = [];
 
     } else {
 
@@ -207,12 +202,10 @@ async function fetchAudioFiles() {
       }));
 
       trackVolumes.value = response.data.map((file) => file.Volumes);
-      trackMutes.value = response.data.map((file) => file.Mute);
 
       console.log("Audio files have been fetched and processed");
       console.log(JSON.stringify(audioFiles,null,2));
       console.log("Track Volumes:", trackVolumes.value);
-      console.log("Track Mutes:", trackMutes.value);
       console.log("Track Volume 3:", trackVolumes.value[2]);
 
     }
@@ -279,24 +272,16 @@ function debounce(func, delay) {
   };
 }
 
-async function updateTrackMute(index) {
+async function toggleTrackMute(audio, index) {
   isLoadingAudio.value = true;
 
-  console.log("BEfore")
-  console.log(trackMutes.value)
-
-  trackMutes.value[index] = !trackMutes.value[index];
-
-  console.log(trackMutes.value)
-  console.log("After")
+  audio.Mute = !audio.Mute;
 
   const audioPlayer = document.getElementById("projectAudio");
   if (isPlaying.value) {
     audioPlayer.pause();
     isPlaying.value = false;
   }
-
-  console.log("Muted!!!!!")
 
   const accessToken = localStorage.getItem("userToken");
   const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
@@ -319,6 +304,10 @@ async function updateTrackMute(index) {
 
 }
 
+
+async function toggleTrackSolo(audio) {
+  audio.Solo = !audio.Solo
+}
 
 
 const addAudioRow = () => {
@@ -473,10 +462,14 @@ export default {
                   <textarea placeholder="Enter track name..." v-model="audio.audioFilename"></textarea>
                   <div class="volume">
                     <Slider :value="trackVolumes.value[index]" @update:modelValue="newVolume => debouncedUpdateTrackVolume(index, newVolume)" :min="0" :max="100" />
-                    <button title="Solo Track">S</button>
-                    <button :style="{ backgroundColor: trackMutes.value[index] ? 'var(--colour-interactable)' : 'var(--colour-background)' 
-                      , color: trackMutes.value[index] ? 'var(--colour-background)' : 'var(--colour-interactable)' 
-                    }" @click="updateTrackMute(index)">
+                    <button title="Solo Track" :style="{
+                      backgroundColor: audio.Solo ? 'var(--colour-interactable)' : 'var(--colour-background)',
+                      color: audio.Solo ? 'var(--colour-background)' : 'var(--colour-interactable)' 
+                    }" @click="toggleTrackSolo(audio)">S</button>
+                    <button title="Mute Track" :style="{
+                      backgroundColor: audio.Mute ? 'var(--colour-interactable)' : 'var(--colour-background)',
+                      color: audio.Mute ? 'var(--colour-background)' : 'var(--colour-interactable)' 
+                    }" @click="toggleTrackMute(audio, index)">
                       M
                     </button>
                     <input
