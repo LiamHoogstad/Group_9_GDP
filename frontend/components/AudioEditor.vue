@@ -42,6 +42,7 @@ export default {
     startDrag(event) {
       this.isBeingDragged = true;
       this.initX = event.clientX;
+      document.body.style['cursor'] = 'grabbing'
     },
     drag(event) {
       if (this.isBeingDragged) {
@@ -55,6 +56,7 @@ export default {
       if (this.isBeingDragged) {
         this.isBeingDragged = false;
         this.oldOffset = this.offset;
+        document.body.style['cursor'] = 'auto'
 
         // this.offset NOW HOLDS THE NEW START POS in seconds!
         // TODO: UPLOAD IT TO BACKEND.
@@ -96,5 +98,23 @@ export default {
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+  top: 0;
+  transition: box-shaodow 150ms,
+              background-color 150ms,
+              top ease-out 150ms;
+}
+
+.editor .file:hover {
+  cursor:grab;
+  box-shadow: 0em 0.05em 0.3em 0.01em var(--colour-dropshadow);
+  background-color: var(--colour-interactable-hover);
+}
+
+.editor .file:active {
+  cursor:grabbing;
+  position: relative;
+  top: 0.1em;
+  box-shadow: inset 0em 0.05em 0.5em 0.1em var(--colour-dropshadow);
+  background-color: var(--colour-interactable-click);
 }
 </style>
