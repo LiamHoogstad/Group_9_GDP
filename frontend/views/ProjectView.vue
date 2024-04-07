@@ -398,9 +398,10 @@ export default {
                     </button>
                   </div>
                 </div>
-                <button class="record" title="Record">
+                <!-- FOR FUTURE RELEASES. -->
+                <!-- <button class="record" title="Record">
                   <h2>•</h2>
-                </button>
+                </button> -->
               </td>
               <td class="trackPreview">
                 <!-- ALL BELOW VALUES IN SECONDS -->
