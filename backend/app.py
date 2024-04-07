@@ -15,6 +15,7 @@ from werkzeug.utils import secure_filename
 from datetime import datetime
 from pydub import AudioSegment
 from datetime import datetime
+from math import log10
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -396,8 +397,15 @@ def stream_project_combined_audio(user_id, project_title):
     except Exception as e:
         return jsonify({'message': 'Error streaming combined audio: ' + str(e)}), 500
     
-
-    
+# This function converts the volume level from 1 to 100 to decibels
+def volume_to_decibels(volume_level):
+    # Assuming volume_level 100 is 0 dB and 1 is -60 dB for example
+    if volume_level == 100:
+        return 0  # No change in volume
+    else:
+        # Convert the volume level to a decibel value
+        # Here, we map volume level 1 to -60 dB and 100 to 0 dB
+        return 20 * log10(volume_level / 100)
 
 @app.route('/updateAudioVolume/<user_id>/<project_title>/<index>/<newVolume>', methods=['GET'])
 def update_audio_volume(user_id, project_title, index, newVolume):
@@ -444,6 +452,68 @@ def update_audio_volume(user_id, project_title, index, newVolume):
         return jsonify({'message': str(e)}), 500
     
 
+@app.route('/updateAudioPosition/<user_id>/<project_title>/<index>/<newPosition>', methods=['GET'])
+def update_audio_position(user_id, project_title, index, newPosition):
+
+    print("MUAHAHAHHAHAHAHAAHAHA   ---- Position")
+    print("Index", index, "Start Position", newPosition)
+
+    try:
+        # Convert index and newVolume to their appropriate types
+
+        print("MIDWAY 0 !")
+
+        print(str.isdigit(index))
+        print(str.isdigit(newPosition))
+
+        #newPosition = newPosition.strip()
+
+        print("MIDWAY 12312412")
+        index = int(index)
+        newPosition = int(float(newPosition))
+
+
+        print("MIDWAY 1 !")
+
+        # Find the user by ID
+        user = users_collection.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            return jsonify({'message': 'User not found'}), 404
+        
+        print("MIDWAY 2 !")
+
+        # Decode the project title from URL encoding
+        project_title_decoded = project_title.replace("%20", " ")
+        project = next((proj for proj in user.get('projects', []) if proj['title'] == project_title_decoded), None)
+
+        if not project:
+            return jsonify({'message': 'Project not found'}), 404
+        
+        print("MIDWAY!")
+
+        # Ensure the audio file index exists in the project
+        if 'audioFiles' in project and len(project['audioFiles']) > index:
+            # Update the volume of the specified audio file
+            audio_files = project['audioFiles']
+            audio_files[index]['Start_Position'] = newPosition
+            
+            # Update the project in the database
+            users_collection.update_one(
+                {'_id': ObjectId(user_id), 'projects.title': project_title_decoded},
+                {'$set': {'projects.$.audioFiles': audio_files}}
+            )
+
+            return jsonify({'message': 'Audio position updated successfully'}), 200
+        else:
+            return jsonify({'message': 'Invalid audio file index'}), 404
+    except ValueError:
+        # Handle case where index or newVolume can't be converted to integers
+        return jsonify({'message': 'Invalid input for index or track position'}), 400
+    except Exception as e:
+        # Catch-all for any other errors
+        return jsonify({'message': str(e)}), 500
+    
+
 @app.route('/updateTrackMute/<user_id>/<project_title>/<index>', methods=['GET'])
 def update_track_mute(user_id, project_title, index):
 
@@ -477,7 +547,61 @@ def update_track_mute(user_id, project_title, index):
             else:
                 # Handle the case where 'Mute' attribute does not exist
                 # For example, you could initialize it here
-                audio_files[index]['Mute'] = True # Or False, depending on your default
+                audio_files[index]['Mute'] = False # Or False, depending on your default
+
+            
+            # Update the project in the database
+            users_collection.update_one(
+                {'_id': ObjectId(user_id), 'projects.title': project_title_decoded},
+                {'$set': {'projects.$.audioFiles': audio_files}}
+            )
+
+            return jsonify({'message': 'Audio volume updated successfully'}), 200
+        else:
+            return jsonify({'message': 'Invalid audio file index'}), 404
+    except ValueError:
+        # Handle case where index or newVolume can't be converted to integers
+        return jsonify({'message': 'Invalid input for index or volume'}), 400
+    except Exception as e:
+        # Catch-all for any other errors
+        return jsonify({'message': str(e)}), 500
+    
+
+@app.route('/updateTrackSolo/<user_id>/<project_title>/<index>', methods=['GET'])
+def update_track_solo(user_id, project_title, index):
+
+    print("SOLO :::::MUAHAHAHHAHAHAHAAHAHA::::::SOLOLOLOL:::::")
+
+    try:
+        print("Index:", index)
+        index = int(index)
+        print("SOLO :::::MUAHAHAHHAHAHAHAAHAHA::::::SOLOLOLOL::::: PART 2")
+        # Find the user by ID
+        user = users_collection.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            return jsonify({'message': 'User not found'}), 404
+
+        # Decode the project title from URL encoding
+        project_title_decoded = project_title.replace("%20", " ")
+        project = next((proj for proj in user.get('projects', []) if proj['title'] == project_title_decoded), None)
+
+        if not project:
+            return jsonify({'message': 'Project not found'}), 404
+
+        # Ensure the audio file index exists in the project
+        if 'audioFiles' in project and len(project['audioFiles']) > index:
+            # Update the Solo status of the specified audio file
+            audio_files = project['audioFiles']
+            
+            if 'Solo' in audio_files[index]:
+                if audio_files[index]['Solo'] == True:
+                    audio_files[index]['Solo'] = False
+                else:
+                    audio_files[index]['Solo'] = True
+            else:
+                # Handle the case where 'Solo' attribute does not exist
+                # For example, you could initialize it here
+                audio_files[index]['Solo'] = False # Or False, depending on your default
 
             
             # Update the project in the database
@@ -497,7 +621,6 @@ def update_track_mute(user_id, project_title, index):
         return jsonify({'message': str(e)}), 500
 
 
-
 @app.route('/streamProjectAudios/<user_id>/<project_title>', methods=['GET'])
 def stream_project_audios(user_id, project_title):
     print("Processing combined audio files...")
@@ -505,6 +628,8 @@ def stream_project_audios(user_id, project_title):
     if user:
         project_title_decoded = project_title.replace("%20", " ")
         project = next((proj for proj in user.get('projects', []) if proj['title'] == project_title_decoded), None)
+
+        isProjectSolo = False
 
         if project:
             if 'combinedAudioId' in project:
@@ -516,7 +641,16 @@ def stream_project_audios(user_id, project_title):
                     print(f"Error deleting old combined audio file: {e}")
             
             combined_audio = AudioSegment.silent(duration=300000)
+
+            # Check if any audio file is set to Solo
+            is_any_track_solo = any(audio_file.get('Solo', False) for audio_file in project.get('audioFiles', []))
+
             for audio_file in project.get('audioFiles', []):
+
+                # Skip processing non-solo tracks if a solo track exists
+                if is_any_track_solo and (audio_file.get('Solo', False) == False):
+                    continue
+
                 if 'audioFileId' in audio_file:
                     try:
                         file_id = ObjectId(audio_file['audioFileId'])
@@ -526,12 +660,15 @@ def stream_project_audios(user_id, project_title):
                         print("Here is the mute status: ", audio_file['Mute'])
                         print("Here is the mute type: ", type(audio_file['Mute']))
 
-
+                        audioOffset = int(audio_file['Start_Position'])
+                        audioOffset = audioOffset * 1000
+                        volume_adjustment = volume_to_decibels(audio_file['Volumes'])
 
                         if 'Mute' in audio_file:
+                            
                             print("Mute is in the audio file: ", audio_file['audioFilename'] )
                             if audio_file['Mute'] == False:
-                                audio_segment = audio_segment + ((audio_file['Volumes']) - 100)
+                                audio_segment = audio_segment + volume_adjustment #((audio_file['Volumes']) - 100)
                                 print("IT WAS FALSE!!")
                             elif audio_file['Mute'] == True:
                                 audio_segment = audio_segment - 1000
@@ -544,7 +681,7 @@ def stream_project_audios(user_id, project_title):
                             audio_file['Mute'] = True
                             
 
-                        combined_audio = combined_audio.overlay(audio_segment)
+                        combined_audio = combined_audio.overlay(audio_segment, position=audioOffset)
                     except Exception as e:
                         print(f"Error processinggggggggg file {audio_file['audioFileId']}: {e}")
                         continue

@@ -18,24 +18,7 @@ const audioSrc = ref("");
 const combinedAudioReady = ref(false);
 const isLoadingAudio = ref(true);
 const trackVolumes = [20,40,60,100];
-const trackMutes = []
-
-// onMounted(async () => {
-//   // Assuming the project title comes from the route parameters (update accordingly)
-//   projectTitle.value = route.params.title;
-
-//   const accessToken = localStorage.getItem("userToken");
-//   if (!accessToken) {
-//     console.error("No access token found. Redirecting to login...");
-//     router.push({ name: "SignIn" });
-//     return;
-//   }
-
-//   const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
-
-//   // Fetch the project by its title and the user's ID
-//   await fetchProjectData(userId, projectTitle.value);
-// });
+const trackStartPositions = [0,0,0,0]
 
 watch(
   audioFiles,
@@ -151,7 +134,7 @@ async function fetchAudioFiles() {
       console.log("No audio files were found for this user.");
       audioFiles.value = [];
       trackVolumes.value = [];
-      trackMutes.value = [];
+      trackStartPositions.value = [];
     } else {
       audioFiles.value = response.data.map((file) => ({
         ...file,
@@ -159,13 +142,13 @@ async function fetchAudioFiles() {
       }));
 
       trackVolumes.value = response.data.map((file) => file.Volumes);
-      trackMutes.value = response.data.map((file) => file.Mute);
+      trackStartPositions.value = response.data.map((file) => file.Start_Position);
 
       console.log("Audio files have been fetched and processed");
       console.log(JSON.stringify(audioFiles,null,2));
       console.log("Track Volumes:", trackVolumes.value);
-      console.log("Track Mutes:", trackMutes.value);
-      console.log("Track Volume 3:", trackVolumes.value[2]);
+      console.log("Track Volumes:", trackStartPositions.value);
+      // console.log("Track Volume 3:", trackVolumes.value[2]);
 
     }
   } catch (error) {
@@ -175,52 +158,6 @@ async function fetchAudioFiles() {
     isLoadingAudio.value = false;
   }
 }
-
-/* async function fetchAudioFiles() {
-  const accessToken = localStorage.getItem("userToken");
-  const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
-
-  try {
-    const response = await axios.get(
-      `http://127.0.0.1:5000/getAudios/${userId}/${encodeURIComponent(
-        title.value
-      )}`,
-      {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      }
-    );
-
-    if (!response.data.length) {
-      console.log("No audio files were found for this user.");
-      // Optionally, clear or set default values if no data is found
-      audioFiles.value = [];
-      trackVolumes.value = [];
-      trackMutes.value = [];
-
-    } else {
-
-      audioFiles.value = response.data.map((file) => ({
-      ...file,
-      src: `http://127.0.0.1:5000/streamAudio/${file.audioFileId}`,
-      }));
-
-      trackVolumes.value = response.data.map((file) => file.Volumes);
-      trackMutes.value = response.data.map((file) => file.Mute);
-
-      console.log("Audio files have been fetched and processed");
-      console.log(JSON.stringify(audioFiles,null,2));
-      console.log("Track Volumes:", trackVolumes.value);
-      console.log("Track Mutes:", trackMutes.value);
-      console.log("Track Volume 3:", trackVolumes.value[2]);
-
-    }
-
-  } catch (error) {
-    console.error("Error fetching audio files:", error);
-  }
-} */
 
 onMounted(async () => {
   await fetchAudioFiles();
@@ -232,13 +169,11 @@ function updateVolume(newVolume) {
   audioPlayer.volume = volumeValue;
 }
 
-
-
-
-
 /* qweoifnqwpeiofubqweifubqweofiubqweofiuqbweofiuqbwefoiuqwbefoqiuwefoqwieufbqwef */
-async function updateTrackVolume(index, newVolume) {
+async function updateTrackVolume(audio, index, newVolume) {
   isLoadingAudio.value = true;
+
+  audio.Volumes = newVolume
 
   const audioPlayer = document.getElementById("projectAudio");
   if (isPlaying.value) {
@@ -269,6 +204,7 @@ async function updateTrackVolume(index, newVolume) {
 }
 
 const debouncedUpdateTrackVolume = debounce(updateTrackVolume, 500);
+
 function debounce(func, delay) {
   let debounceTimer;
   return function() {
@@ -279,16 +215,10 @@ function debounce(func, delay) {
   };
 }
 
-async function updateTrackMute(index) {
+async function updateTrackMute(audio, index) {
   isLoadingAudio.value = true;
 
-  console.log("BEfore")
-  console.log(trackMutes.value)
-
-  trackMutes.value[index] = !trackMutes.value[index];
-
-  console.log(trackMutes.value)
-  console.log("After")
+  audio.Mute = !audio.Mute;
 
   const audioPlayer = document.getElementById("projectAudio");
   if (isPlaying.value) {
@@ -308,6 +238,77 @@ async function updateTrackMute(index) {
     console.log("Muting File in the backend...");
     const muteResponse = await axios.get(
       `http://127.0.0.1:5000/updateTrackMute/${userId}/${encodeURIComponent(title.value)}/${indexString}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    
+    streamAllAudioFiles();
+
+  } catch (error) {
+    console.error("Error combining or streaming audio files:", error);
+  }
+
+}
+
+async function updateTrackSolo(audio, index) {
+  isLoadingAudio.value = true;
+
+  audio.Solo = !audio.Solo
+
+  const audioPlayer = document.getElementById("projectAudio");
+  if (isPlaying.value) {
+    audioPlayer.pause();
+    isPlaying.value = false;
+  }
+
+  console.log("Muted!!!!!")
+
+  const accessToken = localStorage.getItem("userToken");
+  const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+
+  const indexString = String(index)
+
+  try {
+
+    console.log("Muting File in the backend...");
+    const soloResponse = await axios.get(
+      `http://127.0.0.1:5000/updateTrackSolo/${userId}/${encodeURIComponent(title.value)}/${indexString}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    
+    streamAllAudioFiles();
+
+  } catch (error) {
+    console.error("Error combining or streaming audio files:", error);
+  }
+
+}
+
+const debouncedUpdateTrackPosition = debounce(updateTrackPosition, 500);
+async function updateTrackPosition(audio, index, trackPos) {
+  isLoadingAudio.value = true;
+
+  console.log("New Position: ")
+  console.log(trackPos)
+
+  audio.Start_Position = trackPos
+
+  const audioPlayer = document.getElementById("projectAudio");
+  if (isPlaying.value) {
+    audioPlayer.pause();
+    isPlaying.value = false;
+  }
+
+  const accessToken = localStorage.getItem("userToken");
+  const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+
+  const indexString = String(index)
+  const trackPosString = String(trackPos)
+
+  try {
+
+    console.log("Combining all audio files in the backend...");
+    const positionResponse = await axios.get(
+      `http://127.0.0.1:5000/updateAudioPosition/${userId}/${encodeURIComponent(title.value)}/${indexString}/${trackPosString}`,
       { headers: { Authorization: `Bearer ${accessToken}` } }
     );
     
@@ -472,11 +473,15 @@ export default {
                 <div class="properties">
                   <textarea placeholder="Enter track name..." v-model="audio.audioFilename"></textarea>
                   <div class="volume">
-                    <Slider :value="trackVolumes.value[index]" @update:modelValue="newVolume => debouncedUpdateTrackVolume(index, newVolume)" :min="0" :max="100" />
-                    <button title="Solo Track">S</button>
-                    <button :style="{ backgroundColor: trackMutes.value[index] ? 'var(--colour-interactable)' : 'var(--colour-background)' 
-                      , color: trackMutes.value[index] ? 'var(--colour-background)' : 'var(--colour-interactable)' 
-                    }" @click="updateTrackMute(index)">
+                    <Slider :value="audio.Volumes" @update:modelValue="newVolume => debouncedUpdateTrackVolume(audio, index, newVolume)" :min="0" :max="100" />
+                      <button title="Solo Track" :style="{
+                      backgroundColor: audio.Solo ? 'var(--colour-interactable)' : 'var(--colour-background)',
+                      color: audio.Solo ? 'var(--colour-background)' : 'var(--colour-interactable)' 
+                    }" @click="updateTrackSolo(audio, index)">S</button>
+                    <button title="Mute Track" :style="{
+                      backgroundColor: audio.Mute ? 'var(--colour-interactable)' : 'var(--colour-background)',
+                      color: audio.Mute ? 'var(--colour-background)' : 'var(--colour-interactable)' 
+                    }" @click="updateTrackMute(audio, index)">
                       M
                     </button>
                     <input
@@ -509,7 +514,8 @@ export default {
               <td class="trackPreview">
                 <!-- ALL BELOW VALUES IN SECONDS -->
                 <AudioEditor
-                  :initOffset = "0.0"
+                  @update:offset="trackPos => debouncedUpdateTrackPosition(audio, index, trackPos)"
+                  :initOffset = "audio.Start_Position"
                   :initTrackLength = "180.0"
                   :initFileLength = "10.0"
                 />

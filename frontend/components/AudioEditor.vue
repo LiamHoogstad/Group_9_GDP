@@ -55,7 +55,7 @@ export default {
       if (this.isBeingDragged) {
         this.isBeingDragged = false;
         this.oldOffset = this.offset;
-
+        this.$emit('update:offset', this.offset);
         // this.offset NOW HOLDS THE NEW START POS in seconds!
         // TODO: UPLOAD IT TO BACKEND.
       }
@@ -73,7 +73,7 @@ export default {
       class="file"
       @mousedown="startDrag($event)"
     >
-      hi!
+      Offset: {{ offset }}
     </div>
   </div>
 </template>
