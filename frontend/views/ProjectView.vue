@@ -18,7 +18,7 @@ const audioSrc = ref("");
 const combinedAudioReady = ref(false);
 const isLoadingAudio = ref(true);
 const trackVolumes = [20,40,60,100];
-const trackMutes = [false,false,false]
+const trackMutes = []
 
 // onMounted(async () => {
 //   // Assuming the project title comes from the route parameters (update accordingly)
@@ -282,7 +282,7 @@ function debounce(func, delay) {
 async function updateTrackMute(index) {
   isLoadingAudio.value = true;
 
-  /* this.trackMutes.value[index] = !this.trackMutes.value[index]; */
+  this.trackMutes.value[index] = !this.trackMutes.value[index];
 
   const audioPlayer = document.getElementById("projectAudio");
   if (isPlaying.value) {
@@ -468,12 +468,8 @@ export default {
                   <div class="volume">
                     <Slider :value="trackVolumes.value[index]" @update:modelValue="newVolume => debouncedUpdateTrackVolume(index, newVolume)" :min="0" :max="100" />
                     <button title="Solo Track">S</button>
-                    <button
-                      class="toggle-mute"
-                      title="Mute Track"
-                      :class="{ 'button-muted': trackMutes.value[index], 'button-unmuted': !trackMutes.value[index] }"
-                      @click="updateTrackMute(index)"
-                    > M
+                    <button :style="{ backgroundColor: trackMutes.value[index] ? 'red' : 'blue' }" @click="toggleColor"> 
+                      M
                     </button>
                     <input
                       type="file"
