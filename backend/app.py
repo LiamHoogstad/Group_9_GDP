@@ -311,7 +311,9 @@ def upload_audio_to_project(user_id, project_title, index):
         new_file_id = grid_fs_bucket.upload_from_stream(filename, file, metadata={"content_type": content_type, "user_id": user_id})
         users_collection.update_one(
             {'_id': ObjectId(user_id), 'projects.title': project_title},
-            {'$push': {f'projects.$.audioFiles': {'audioFileId': new_file_id, 'audioFilename': filename}}}
+            {'$push': {f'projects.$.audioFiles': {'audioFileId': new_file_id, 
+                        'audioFilename': filename, 'Mute': False,'Solo': False,
+                            'Start_Position':0, 'Volumes': 75}}}
         )
         return jsonify({'message': 'Audio file added and linked to project', 'file_id': str(new_file_id)}), 200
     
@@ -440,6 +442,59 @@ def update_audio_volume(user_id, project_title, index, newVolume):
     except Exception as e:
         # Catch-all for any other errors
         return jsonify({'message': str(e)}), 500
+    
+
+@app.route('/updateTrackMute/<user_id>/<project_title>/<index>', methods=['GET'])
+def update_track_mute(user_id, project_title, index):
+
+    print("::::::::::::::MUAHAHAHHAHAHAHAAHAHA::::::::::::::::")
+
+    try:
+        index = int(index)
+
+        # Find the user by ID
+        user = users_collection.find_one({"_id": ObjectId(user_id)})
+        if not user:
+            return jsonify({'message': 'User not found'}), 404
+
+        # Decode the project title from URL encoding
+        project_title_decoded = project_title.replace("%20", " ")
+        project = next((proj for proj in user.get('projects', []) if proj['title'] == project_title_decoded), None)
+
+        if not project:
+            return jsonify({'message': 'Project not found'}), 404
+
+        # Ensure the audio file index exists in the project
+        if 'audioFiles' in project and len(project['audioFiles']) > index:
+            # Update the mute status of the specified audio file
+            audio_files = project['audioFiles']
+            
+            if 'Mute' in audio_files[index]:
+                if audio_files[index]['Mute'] == True:
+                    audio_files[index]['Mute'] = False
+                else:
+                    audio_files[index]['Mute'] = True
+            else:
+                # Handle the case where 'Mute' attribute does not exist
+                # For example, you could initialize it here
+                audio_files[index]['Mute'] = True # Or False, depending on your default
+
+            
+            # Update the project in the database
+            users_collection.update_one(
+                {'_id': ObjectId(user_id), 'projects.title': project_title_decoded},
+                {'$set': {'projects.$.audioFiles': audio_files}}
+            )
+
+            return jsonify({'message': 'Audio volume updated successfully'}), 200
+        else:
+            return jsonify({'message': 'Invalid audio file index'}), 404
+    except ValueError:
+        # Handle case where index or newVolume can't be converted to integers
+        return jsonify({'message': 'Invalid input for index or volume'}), 400
+    except Exception as e:
+        # Catch-all for any other errors
+        return jsonify({'message': str(e)}), 500
 
 
 
@@ -468,11 +523,30 @@ def stream_project_audios(user_id, project_title):
                         grid_out = grid_fs_bucket.open_download_stream(file_id)
                         audio_segment = AudioSegment.from_file(io.BytesIO(grid_out.read()), format="mp3")
 
-                        audio_segment = audio_segment + ((audio_file['Volumes']) - 100)
+                        print("Here is the mute status: ", audio_file['Mute'])
+                        print("Here is the mute type: ", type(audio_file['Mute']))
+
+
+
+                        if 'Mute' in audio_file:
+                            print("Mute is in the audio file: ", audio_file['audioFilename'] )
+                            if audio_file['Mute'] == False:
+                                audio_segment = audio_segment + ((audio_file['Volumes']) - 100)
+                                print("IT WAS FALSE!!")
+                            elif audio_file['Mute'] == True:
+                                audio_segment = audio_segment - 1000
+                                print("IT WAS TRUE  !!!")
+                            else:
+                                print("SOmething went WRONG")
+                        else:
+                            print("Mute is NOT in the audio file: ", audio_file['audioFilename'] )
+                            print("MUAHAHAHAHAIIIIIII")
+                            audio_file['Mute'] = True
+                            
 
                         combined_audio = combined_audio.overlay(audio_segment)
                     except Exception as e:
-                        print(f"Error processing file {audio_file['audioFileId']}: {e}")
+                        print(f"Error processinggggggggg file {audio_file['audioFileId']}: {e}")
                         continue
 
             buffer = io.BytesIO()

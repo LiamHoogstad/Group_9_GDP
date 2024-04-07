@@ -18,6 +18,7 @@ const audioSrc = ref("");
 const combinedAudioReady = ref(false);
 const isLoadingAudio = ref(true);
 const trackVolumes = [20,40,60,100];
+const trackMutes = [false,false,false]
 
 // onMounted(async () => {
 //   // Assuming the project title comes from the route parameters (update accordingly)
@@ -132,6 +133,50 @@ async function streamAllAudioFiles() {
 }
 
 async function fetchAudioFiles() {
+  isLoadingAudio.value = true;
+  const accessToken = localStorage.getItem("userToken");
+  const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+
+  try {
+    const response = await axios.get(
+      `http://127.0.0.1:5000/getAudios/${userId}/${encodeURIComponent(title.value)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+
+    if (!response.data.length) {
+      console.log("No audio files were found for this user.");
+      audioFiles.value = [];
+      trackVolumes.value = [];
+      trackMutes.value = [];
+    } else {
+      audioFiles.value = response.data.map((file) => ({
+        ...file,
+        src: `http://127.0.0.1:5000/streamAudio/${file.audioFileId}`,
+      }));
+
+      trackVolumes.value = response.data.map((file) => file.Volumes);
+      trackMutes.value = response.data.map((file) => file.Mute);
+
+      console.log("Audio files have been fetched and processed");
+      console.log(JSON.stringify(audioFiles,null,2));
+      console.log("Track Volumes:", trackVolumes.value);
+      console.log("Track Mutes:", trackMutes.value);
+      console.log("Track Volume 3:", trackVolumes.value[2]);
+
+    }
+  } catch (error) {
+    console.error("Error fetching audio files:", error);
+  } finally {
+    // Ensure isLoadingAudio is set to false when the operation is complete
+    isLoadingAudio.value = false;
+  }
+}
+
+/* async function fetchAudioFiles() {
   const accessToken = localStorage.getItem("userToken");
   const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
 
@@ -146,21 +191,36 @@ async function fetchAudioFiles() {
         },
       }
     );
-    audioFiles.value = response.data.map((file) => ({
+
+    if (!response.data.length) {
+      console.log("No audio files were found for this user.");
+      // Optionally, clear or set default values if no data is found
+      audioFiles.value = [];
+      trackVolumes.value = [];
+      trackMutes.value = [];
+
+    } else {
+
+      audioFiles.value = response.data.map((file) => ({
       ...file,
       src: `http://127.0.0.1:5000/streamAudio/${file.audioFileId}`,
-    }));
+      }));
 
-    trackVolumes.value = response.data.map((file) => file.Volumes);
+      trackVolumes.value = response.data.map((file) => file.Volumes);
+      trackMutes.value = response.data.map((file) => file.Mute);
 
-    console.log("Audio files have been fetched and processed");
-    console.log(JSON.stringify(audioFiles,null,2));
-    console.log("Track Volumes:", trackVolumes.value);
-    console.log("Track Volume 3:", trackVolumes.value[2]);
+      console.log("Audio files have been fetched and processed");
+      console.log(JSON.stringify(audioFiles,null,2));
+      console.log("Track Volumes:", trackVolumes.value);
+      console.log("Track Mutes:", trackMutes.value);
+      console.log("Track Volume 3:", trackVolumes.value[2]);
+
+    }
+
   } catch (error) {
     console.error("Error fetching audio files:", error);
   }
-}
+} */
 
 onMounted(async () => {
   await fetchAudioFiles();
@@ -219,7 +279,39 @@ function debounce(func, delay) {
   };
 }
 
+async function updateTrackMute(index) {
+  isLoadingAudio.value = true;
 
+  /* this.trackMutes.value[index] = !this.trackMutes.value[index]; */
+
+  const audioPlayer = document.getElementById("projectAudio");
+  if (isPlaying.value) {
+    audioPlayer.pause();
+    isPlaying.value = false;
+  }
+
+  console.log("Muted!!!!! MUAHAHAAHAHHA")
+
+  const accessToken = localStorage.getItem("userToken");
+  const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+
+  const indexString = String(index)
+
+  try {
+
+    console.log("Muting File in the backend...");
+    const muteResponse = await axios.get(
+      `http://127.0.0.1:5000/updateTrackMute/${userId}/${encodeURIComponent(title.value)}/${indexString}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    
+    streamAllAudioFiles();
+
+  } catch (error) {
+    console.error("Error combining or streaming audio files:", error);
+  }
+
+}
 
 
 
@@ -233,6 +325,7 @@ const triggerFileInput = (index) => {
 const triggerNewFileInput = () => {
   document.getElementById("new-file-input").click();
 };
+
 const updateFile = async (index, event) => {
   const file = event.target.files[0];
   if (file) {
@@ -375,7 +468,13 @@ export default {
                   <div class="volume">
                     <Slider :value="trackVolumes.value[index]" @update:modelValue="newVolume => debouncedUpdateTrackVolume(index, newVolume)" :min="0" :max="100" />
                     <button title="Solo Track">S</button>
-                    <button title="Mute Track">M</button>
+                    <button
+                      class="toggle-mute"
+                      title="Mute Track"
+                      :class="{ 'button-muted': trackMutes.value[index], 'button-unmuted': !trackMutes.value[index] }"
+                      @click="updateTrackMute(index)"
+                    > M
+                    </button>
                     <input
                       type="file"
                       :id="'file-input-' + index"
@@ -543,6 +642,36 @@ tr .trackPreview {
 
 tr .trackPreview .editor {
   height: 6em;
+}
+
+.trackControls button.button-muted {
+  color: white;
+  background-color: #262673;
+}
+
+.trackControls button.button-unmuted {
+  color: var(--colour-background);
+  background-color: var(--colour-interactable);
+}
+
+.trackControls button.toggle-button {
+  color: var(--colour-background);
+  background-color: var(--colour-interactable);
+}
+
+.button-muted {
+  color: white;
+  background-color: #262673;
+}
+
+.button-unmuted {
+  color: var(--colour-background);
+  background-color: var(--colour-interactable);
+}
+
+.toggle-button {
+  color: white;
+  background-color: white;
 }
 
 #ribbon {
