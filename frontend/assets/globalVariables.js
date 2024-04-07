@@ -17,6 +17,12 @@ export const genres = unsortedGenres.sort((a, b) => a.label.localeCompare(b.labe
 // instruments
 export const unsortedInstruments = [
     { value: 'Guitar', label: 'Guitar' },
+    { value: 'Vocal', label: 'Vocal' },
+    { value: 'Drums', label: 'Drums' },
+    { value: 'Synth', label: 'Synth' },
+    { value: 'Violin', label: 'Violin' },
+    { value: 'Brass', label: 'Brass' },
+    { value: 'Wind Instruments', label: 'Wind Instruments' },
     { value: 'Piano', label: 'Piano' },
   ];
   
