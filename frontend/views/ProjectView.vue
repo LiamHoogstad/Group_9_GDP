@@ -3,6 +3,7 @@ import { ref, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import Slider from "../components/Slider.vue";
 import HamburgerMenu from "../components/HamburgerMenu.vue";
+import AudioEditor from "../components/AudioEditor.vue"
 import { genres, instruments } from '../assets/globalVariables.js';
 import MultipleDropdown from "../components/MultipleDropdown.vue";
 import axios from "axios";
@@ -402,10 +403,12 @@ export default {
                 </button>
               </td>
               <td class="trackPreview">
-                {{
-                  audio.audioPreview ||
-                  "QWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNMQWERTYUIOPASDFGHJKLZXCVBNM"
-                }}
+                <!-- ALL BELOW VALUES IN SECONDS -->
+                <AudioEditor
+                  :initOffset = "0.0"
+                  :initTrackLength = "180.0"
+                  :initFileLength = "10.0"
+                />
               </td>
             </tr>
           </table>
@@ -534,6 +537,11 @@ div.first {
 
 tr .trackPreview {
   padding: 0 1em 0 1em;
+  overflow:visible;
+}
+
+tr .trackPreview .editor {
+  height: 6em;
 }
 
 #ribbon {
