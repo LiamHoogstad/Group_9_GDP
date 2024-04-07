@@ -282,7 +282,13 @@ function debounce(func, delay) {
 async function updateTrackMute(index) {
   isLoadingAudio.value = true;
 
-  this.trackMutes.value[index] = !this.trackMutes.value[index];
+  console.log("BEfore")
+  console.log(trackMutes.value)
+
+  trackMutes.value[index] = !trackMutes.value[index];
+
+  console.log(trackMutes.value)
+  console.log("After")
 
   const audioPlayer = document.getElementById("projectAudio");
   if (isPlaying.value) {
@@ -290,7 +296,7 @@ async function updateTrackMute(index) {
     isPlaying.value = false;
   }
 
-  console.log("Muted!!!!! MUAHAHAAHAHHA")
+  console.log("Muted!!!!!")
 
   const accessToken = localStorage.getItem("userToken");
   const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
@@ -468,7 +474,9 @@ export default {
                   <div class="volume">
                     <Slider :value="trackVolumes.value[index]" @update:modelValue="newVolume => debouncedUpdateTrackVolume(index, newVolume)" :min="0" :max="100" />
                     <button title="Solo Track">S</button>
-                    <button :style="{ backgroundColor: trackMutes.value[index] ? 'red' : 'blue' }" @click="toggleColor"> 
+                    <button :style="{ backgroundColor: trackMutes.value[index] ? 'var(--colour-interactable)' : 'var(--colour-background)' 
+                      , color: trackMutes.value[index] ? 'var(--colour-background)' : 'var(--colour-interactable)' 
+                    }" @click="updateTrackMute(index)">
                       M
                     </button>
                     <input
