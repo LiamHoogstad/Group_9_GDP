@@ -838,8 +838,8 @@ def contribute_to_project():
 
     for project in project_creator.get('projects', []):
         if project.get('id') == project_id:
-            # Remove the creator's user_id before copying
             project_to_copy = project.copy()
+            project_to_copy['title'] += "_COPY"  
             if 'user_id' in project_to_copy:
                 del project_to_copy['user_id']
             break
@@ -858,14 +858,9 @@ def contribute_to_project():
     if update_result.modified_count == 0:
         return jsonify({"message": "Failed to copy project"}), 500
 
-    # Retrieve the updated user document to get the index of the newly added project
-    updated_user = users_collection.find_one({'_id': user_id})
-    new_project_index = len(updated_user['projects']) - 1
-    new_project_title = updated_user['projects'][new_project_index]['title']
-
     return jsonify({
         "message": "Project copied successfully",
-        "newProjectTitle": new_project_title  # Send the index of the new project
+        "newProjectTitle": project_to_copy['title']
     }), 200
 
 @app.route('/updateAudioFilename/<user_id>/<audio_file_id>', methods=['PUT'])
@@ -924,7 +919,41 @@ def update_audio_filename(user_id, audio_file_id):
         print(f"An error occurred during update: {e}")
         return jsonify({'message': 'An error occurred while updating the audio filename'}), 500
 
+@app.route('/updateProjectTitle/<user_id>', methods=['PUT'])
+def update_project_title(user_id):
+    data = request.json
+    old_title = data.get('oldProjectTitle')
+    new_title = data.get('newProjectTitle')
 
+    if not old_title or not new_title:
+        return jsonify({"message": "Invalid project title"}), 400
+
+    try:
+        user_object_id = ObjectId(user_id)
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return jsonify({"message": "Invalid user ID"}), 400
+
+    try:
+        update_result = users_collection.update_one(
+            {'_id': ObjectId(user_id), 'projects.title': old_title},
+            {'$set': {'projects.$.title': new_title}}
+        )
+
+        if update_result.matched_count == 0:
+            return jsonify({"message": "Project with the given title not found"}), 404
+
+        if update_result.modified_count == 0:
+            return jsonify({"message": "Project title unchanged"}), 304
+
+        return jsonify({
+            "message": "Project title updated successfully",
+            "oldTitle": old_title,
+            "newTitle": new_title
+        }), 200
+    except Exception as e:
+        print(f"An error occurred during update: {e}")
+        return jsonify({'message': 'An error occurred while updating the project title'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

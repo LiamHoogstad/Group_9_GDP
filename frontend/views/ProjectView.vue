@@ -11,6 +11,7 @@ import axios from "axios";
 const router = useRouter();
 const route = useRoute();
 const title = ref(router.currentRoute.value.params.title);
+let oldTitle = title.value;
 const audioFiles = ref([]);
 const volume = ref(100);
 const isPlaying = ref(false);
@@ -19,6 +20,19 @@ const combinedAudioReady = ref(false);
 const isLoadingAudio = ref(true);
 const trackVolumes = [20, 40, 60, 100];
 const trackStartPositions = [0, 0, 0, 0];
+const newCommentText = ref("");
+const comments = ref([
+  { username: "User1", compliment: "So groovy!" },
+  { username: "User2", compliment: "Absolutely fantastic tune!" },
+  { username: "User3", compliment: "This beat is on fire!" },
+  { username: "User4", compliment: "Incredible vibes!" },
+  { username: "User5", compliment: "This is a masterpiece." },
+  { username: "User6", compliment: "Can't stop listening!" },
+  { username: "User7", compliment: "Music to my ears." },
+  { username: "User8", compliment: "A true work of art." },
+  { username: "User9", compliment: "Epic sound!" },
+  { username: "User10", compliment: "Drops are out of this world!" },
+]);
 
 watch(
   audioFiles,
@@ -432,6 +446,43 @@ const sendTrackNameUpdate = async (audioFileId, newFilename) => {
     // Handle error state or UI feedback here
   }
 };
+const sendProjectTitleUpdate = async () => {
+  const accessToken = localStorage.getItem("userToken");
+  const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+
+  try {
+    console.log("Updating project title...");
+    const response = await axios.put(
+      `http://127.0.0.1:5000/updateProjectTitle/${userId}`,
+      { oldProjectTitle: oldTitle, newProjectTitle: title.value },
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+    console.log("Project title updated successfully", response.data);
+    // Update oldTitleValue to the new title after a successful update
+    oldTitle = title.value;
+  } catch (error) {
+    console.error(
+      "Error updating the project title:",
+      error.response ? error.response.data : error
+    );
+  }
+};
+const submitComment = () => {
+  if (newCommentText.value.trim()) {
+    const username = "Username";
+
+    comments.value.unshift({
+      username: username,
+      compliment: newCommentText.value,
+    });
+
+    newCommentText.value = "";
+  }
+};
 </script>
 
 <script>
@@ -458,13 +509,12 @@ export default {
         <input
           type="text"
           id="project_name"
-          v-bind:title="title"
+          :title="title.value"
           v-model="title"
+          @keyup.enter.stop="sendProjectTitleUpdate"
         />
       </div>
-      <div class="right">
-        <!--  <HamburgerMenu /> -->
-      </div>
+      <div class="right"></div>
       <div class="centre">
         <div id="playbackControls">
           <p v-if="isLoadingAudio" style="text-align: center">Loading...</p>
@@ -503,7 +553,7 @@ export default {
                   <textarea
                     placeholder="Enter track name..."
                     v-model="audio.audioFilename"
-                    @keyup.enter="
+                    @keyup.enter.stop="
                       sendTrackNameUpdate(
                         audio.audioFileId,
                         audio.audioFilename
@@ -570,13 +620,8 @@ export default {
                     </button>
                   </div>
                 </div>
-                <!-- FOR FUTURE RELEASES. -->
-                <!-- <button class="record" title="Record">
-                  <h2>•</h2>
-                </button> -->
               </td>
               <td class="trackPreview">
-                <!-- ALL BELOW VALUES IN SECONDS -->
                 <AudioEditor
                   @update:offset="
                     (trackPos) =>
@@ -611,6 +656,56 @@ export default {
       <button v-else @click="triggerNewFileInput" style="margin-top: 20px">
         Add Audio File
       </button>
+      <div class="separatorLine"></div>
+      <div style="position: relative; margin-top: 2vh; z-index: 100">
+        <h2 style="font-family: 'Delta Gothic One'; z-index: -5001">
+          Comments
+        </h2>
+      </div>
+      <div
+        style="
+          margin-top: 10px;
+          justify-content: center;
+          display: flex;
+          align-items: center;
+          gap: 15px;
+        "
+      >
+        <textarea
+          type="text"
+          v-model="newCommentText"
+          class="addComment"
+          placeholder="Comment..."
+          style="position: relative; z-index: 0; width: 50%"
+        />
+        <button @click="submitComment">Post</button>
+      </div>
+      <div
+        style="
+          position: relative;
+          width: 80%;
+          left: 10%;
+          padding: 2vh;
+          z-index: -5000;
+        "
+      >
+        <ul>
+          <div
+            v-for="(comment, index) in comments"
+            :key="index"
+            class="comments"
+          >
+            <div class="box">
+              <h3 class="user" style="font-weight: bold">
+                {{ comment.username }}
+              </h3>
+            </div>
+            <div class="box" style="font-weight: 100">
+              <h3 class="description">{{ comment.compliment }}</h3>
+            </div>
+          </div>
+        </ul>
+      </div>
     </div>
   </div>
 </template>
@@ -910,5 +1005,58 @@ button#hamburger img {
   padding: 1em 1em 1em 2em;
   background-color: var(--colour-interactable);
   border-radius: 5em 0 0 5em;
+}
+.addComment {
+  width: 50%;
+  padding: 0.5em 2em 0.5em 2em;
+  border: 0px solid var(--colour-interactable);
+  border-radius: 0.5em;
+  flex: 0.5;
+  margin-top: 1em;
+  background-image: url("../assets/comment.png");
+  background-repeat: no-repeat;
+  background-position: 5px 20%;
+  background-size: 20px 20px;
+  background-color: var(--colour-panel-soft);
+  margin-bottom: 1em;
+  font-size: medium;
+  outline: none;
+  height: 70px;
+  resize: vertical;
+  overflow-y: auto;
+  color: var(--colour-text);
+  z-index: 0;
+}
+.addComment::placeholder {
+  color: var(--colour-interactable);
+}
+
+.comments {
+  background-color: var(--colour-panel-soft);
+  color: var(--colour-text);
+  text-align: left;
+  display: flex;
+  padding: 0.5em;
+  margin: 0 1em 1em 1em;
+  border-radius: 1em;
+  flex-direction: column; /* Change flex-direction to column */
+  max-height: 200px; /* Set a maximum height for the comments box */
+  overflow-y: auto;
+  z-index: -5001;
+}
+
+.comments .box {
+  font-family: "Fredoka";
+  font-size: 12px;
+}
+.separatorLine {
+  position: relative;
+  width: 90%;
+  left: 5%;
+  height: 10px;
+  background-color: #77afff;
+  border-radius: 10px;
+  margin-top: 3vh;
+  z-index: -5001;
 }
 </style>
