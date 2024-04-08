@@ -868,5 +868,63 @@ def contribute_to_project():
         "newProjectTitle": new_project_title  # Send the index of the new project
     }), 200
 
+@app.route('/updateAudioFilename/<user_id>/<audio_file_id>', methods=['PUT'])
+def update_audio_filename(user_id, audio_file_id):
+    data = request.json
+    new_filename = data.get('audioFilename')
+    project_title = data.get('projectTitle')
+
+    if not new_filename or not project_title:
+        return jsonify({"message": "Invalid filename or project title"}), 400
+    
+    user = users_collection.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        return jsonify({'message': 'User not found'}), 404
+    
+    try:
+        user_object_id = ObjectId(user_id)  
+        audio_file_object_id = ObjectId(audio_file_id)  
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return jsonify({"message": "Invalid user or audio file ID"}), 400
+
+    try:
+        update_result = users_collection.update_one(
+            {
+                '_id': user_object_id,
+                'projects': {
+                    '$elemMatch': {
+                        'title': project_title,
+                        'audioFiles.audioFileId': audio_file_object_id
+                    }
+                }
+            },
+            {
+                '$set': {
+                    'projects.$[proj].audioFiles.$[audio].audioFilename': new_filename
+                }
+            },
+            array_filters=[
+                {'proj.title': project_title},
+                {'audio.audioFileId': audio_file_object_id}
+            ]
+        )
+
+        if update_result.matched_count == 0:
+            return jsonify({"message": "Project or audio file not found"}), 404
+
+        if update_result.modified_count == 0:
+            return jsonify({"message": "Audio filename unchanged"}), 304
+
+        return jsonify({
+            "message": "Audio filename updated successfully",
+            "newFilename": new_filename
+        }), 200
+    except Exception as e:
+        print(f"An error occurred during update: {e}")
+        return jsonify({'message': 'An error occurred while updating the audio filename'}), 500
+
+
+
 if __name__ == '__main__':
     app.run(debug=True)

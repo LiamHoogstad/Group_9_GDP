@@ -15,6 +15,7 @@ export default {
     const menu = ref(false);
     const router = useRouter();
 
+    const showPassword = ref(false);
     const emailError = ref("");
     const passwordError = ref("");
     const usernameError = ref("");
@@ -179,6 +180,7 @@ export default {
       validateUsername,
       validateAge,
       canSubmit,
+      showPassword,
     };
   },
 };
@@ -210,14 +212,13 @@ export default {
         ></v-text-field>
         <v-text-field
           v-model="password"
-          :error-messages="passwordError"
           class="text-field-custom"
           label="Password"
-          placeholder="*******"
-          type="password"
+          :type="showPassword ? 'text' : 'password'"
           variant="outlined"
+          :append-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
+          @click:append="showPassword = !showPassword"
           style="padding: 10px"
-          @blur="validatePassword"
         ></v-text-field>
         <v-text-field
           v-model="username"
