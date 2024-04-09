@@ -448,6 +448,9 @@ export default {
               </div>
             </div>
           </div>
+          <div>
+            <p>{{ project.date }}</p>
+          </div>
         </div>
 
         <div class="interact">

@@ -49,10 +49,10 @@ grid_fs_bucket = GridFSBucket(db)
 # used to delete projects from a specific user
 if False:
     print("doing it")
-    # result = users_collection.update_one({'username': "iluvemusic"}, {'$unset': {'projects': ''}})
+    # result = users_collection.update_one({'username': "i"}, {'$unset': {'projects': ''}})
     result = users_collection.update_one(
-        {'username': "MrDemo123"},
-        {'$pull': {'projects': {'title': '', 'description': ''}}}
+        {'username': "i actually hate music"},
+        {'$pull': {'projects': {'title': 'Weeeeeeeee (not po)'}}}
     )
     # Check if the update was successful
     if result.modified_count > 0:
@@ -892,9 +892,9 @@ def upvote_project(current_user_id, username, project_id, like):
                         user_upvote['like'] = like
                         user_upvote['date'] = datetime.now()
                         # update in database
-                        users_collection.update_one(
-                            {'username': username, 'projects.id': project_id, 'projects.projectUpvote.user': current_user_id},
-                            {'$set': {'projects.$.projectUpvote.$': user_upvote}}
+                        users_collection.update_one({ 'username': username, 'projects': { '$elemMatch': { 'id': project_id, 'projectUpvote.user': current_user_id }}},
+                            { '$set': { 'projects.$.projectUpvote.$[elem]': user_upvote } },
+                            array_filters=[{'elem.user': current_user_id}]
                         )
                         return jsonify({"success": True, "message": "Vote successfully changed"})
                     # need to delete the vote
