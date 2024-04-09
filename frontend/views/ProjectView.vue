@@ -15,6 +15,7 @@ const volume = ref(100);
 const isPlaying = ref(false);
 const audioSrc = ref("");
 const comment = ref("");
+const comments = ref([]);
 const combinedAudioReady = ref(false);
 const isLoadingAudio = ref(true);
 const trackVolumes = [20,40,60,100];
@@ -48,6 +49,98 @@ watch(
   },
   { deep: true }
 );
+
+const fetchComments = async () => {
+  const accessToken = localStorage.getItem("userToken");
+  const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+  const response = await axios.get(
+    `http://127.0.0.1:5000/getComments/${userId}/${encodeURIComponent(
+      title.value
+    )}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  comments.value = response.data;
+  comments.value.sort((a, b) => {
+    const dateA = new Date(a.date);
+    const dateB = new Date(b.date);
+    return dateA < dateB ? 1 : (dateA > dateB ? -1 : 0);
+  });
+
+  const now = new Date();
+  console.log("NEWW\n\n\n");
+  console.log(now);
+  comments.value.forEach(c => {
+    let seconds = Math.floor((now - new Date(c.date)) / 1000);
+    console.log(new Date(c.date));
+    console.log(seconds);
+    if (seconds < 60) {
+      c.date = `${seconds} second${seconds === 1 ? '' : 's'} ago`;
+    } else if (seconds < 3600) {
+      seconds = Math.floor(seconds / 60);
+      c.date = `${seconds} minute${seconds === 1 ? '' : 's'} ago`
+    } else if (seconds < 86400) {
+      seconds = Math.floor(seconds / 3600);
+      c.date = `${seconds} hour${seconds === 1 ? '' : 's'} ago`
+    } else if (seconds < 31536000) {
+      seconds = Math.floor(seconds / 86400);
+      c.date = `${seconds} day${seconds === 1 ? '' : 's'} ago`
+    } else {
+      seconds = Math.floor(seconds / 31536000);
+      c.date = `${seconds} year${seconds === 1 ? '' : 's'} ago`
+    }
+    console.log(c.date);
+  });
+};
+
+const idCheck = async (id) => {
+  const accessToken = localStorage.getItem("userToken");
+  const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+  return userId == id;
+};
+
+const submitComment = async (c) => {
+  const accessToken = localStorage.getItem("userToken");
+  const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+
+  try {
+    let max = comments.value.length > 0 ? comments.value.reduce((max, c) => (parseInt(c.id) > max ? parseInt(c.id) : max), parseInt(comments.value[0].id)) : 0;
+    const commentData = {
+        comment: comment.value,
+        date: new Date(),
+        id: max + 1,
+    };
+    const response = await axios.post(
+      `http://127.0.0.1:5000/addComment/${userId}/${userId}/${encodeURIComponent(
+        title.value
+      )}`, commentData,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+    comment.value = '';
+    fetchComments();
+  } catch (error) {
+    console.error("Error fetching comments", error);
+  }
+};
+
+const deleteComment = async (id) => {
+  const accessToken = localStorage.getItem("userToken");
+  const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+  await axios.delete(
+    `http://127.0.0.1:5000/deleteComment/${userId}/${id}/${encodeURIComponent(
+        title.value
+      )}`,
+      {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
+  comments.value = comments.value.filter(c => c.id !== id);
+};
 
 const togglePlay = async () => {
   const audioPlayer = document.getElementById("projectAudio");
@@ -164,6 +257,7 @@ async function fetchAudioFiles() {
 
 onMounted(async () => {
   await fetchAudioFiles();
+  await fetchComments();
 });
 
 function updateVolume(newVolume) {
@@ -308,7 +402,10 @@ const deleteAudioFile = async (index) => {
     );
   }
 };
+
 </script>
+
+
 
 <script>
 export default {
@@ -435,17 +532,21 @@ export default {
       <div style="margin-top: 10px;justify-content: center; display: flex; align-items: center;">
         
         <textarea type="text" v-model="comment" class="addComment" placeholder="Comment..."/>
-        <button @click="SubmitComment">Post</button>
+        <button @click="submitComment">Post</button>
       </div>
       <div>
     <ul>
-      <div class="comments" v-for="index in 10">
+      <div class="comments" v-for="com in comments" :key="com._id">
         <div class="box">
-          <h3 class="user" style="font-weight: bold;">{{ "Username"}}</h3>
+          <h3 class="user" style="font-weight: bold;">{{ com.username }}</h3>
         </div>
         <div class="box">
-          <h3 class="description">{{ "SO GROOVY!!!" }}</h3>
+          <h3 class="user" style="font-weight: bold;">{{ com.date }}</h3>
         </div>
+        <div class="box">
+          <h3 class="description">{{ com.comment }}</h3>
+        </div>
+        <button v-if="idCheck(com.user)" @click="deleteComment(com.id)">Delete</button>
       </div>
     </ul>
     </div>
