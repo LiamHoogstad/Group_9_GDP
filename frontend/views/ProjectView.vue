@@ -41,13 +41,16 @@ watch(
 const fetchComments = async () => {
   const accessToken = localStorage.getItem("userToken");
   const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+  
+  let projectDetailsString = localStorage.getItem("projectDetails");
+  let projectDetails = JSON.parse(projectDetailsString);
+
   const response = await axios.get(
-    `http://127.0.0.1:5000/getComments/${userId}/${encodeURIComponent(
-      title.value
-    )}`,
+    `http://127.0.0.1:5000/getComments/${projectDetails._id}`,
     { headers: { Authorization: `Bearer ${accessToken}` } }
   );
   comments.value = response.data;
+
   comments.value.sort((a, b) => {
     const dateA = new Date(a.date);
     const dateB = new Date(b.date);
@@ -55,12 +58,13 @@ const fetchComments = async () => {
   });
 
   const now = new Date();
-  console.log("NEWW\n\n\n");
-  console.log(now);
+
   comments.value.forEach((c) => {
+    // check if its the right user
+    c['canDelete'] = userId == c['user'];
+
     let seconds = Math.floor((now - new Date(c.date)) / 1000);
-    console.log(new Date(c.date));
-    console.log(seconds);
+
     if (seconds < 60) {
       c.date = `${seconds} second${seconds === 1 ? "" : "s"} ago`;
     } else if (seconds < 3600) {
@@ -80,27 +84,13 @@ const fetchComments = async () => {
   });
 };
 
-const idCheck = async (id) => {
-  const accessToken = localStorage.getItem("userToken");
-  const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
-  return userId == id;
-};
-
 const submitComment = async (c) => {
   const accessToken = localStorage.getItem("userToken");
   const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
-  let projectDetailsString = localStorage.getItem("projectDetails");
-  console.log(projectDetailsString);
-  let projectDetails = JSON.parse(projectDetailsString);
-  console.log(projectDetails);
 
-  // Conditionally set projectId based on the _id type
-  let projectId;
-  if (typeof projectDetails._id === "object" && projectDetails._id.$oid) {
-    projectId = projectDetails._id.$oid; // If _id is an object with $oid
-  } else {
-    projectId = projectDetails._id; // If _id is a string
-  }
+  let projectDetailsString = localStorage.getItem("projectDetails");
+  let projectDetails = JSON.parse(projectDetailsString);
+  let projectId = projectDetails._id;
   try {
     let max =
       comments.value.length > 0
@@ -115,9 +105,7 @@ const submitComment = async (c) => {
       id: max + 1,
     };
     const response = await axios.post(
-      `http://127.0.0.1:5000/addComment/${userId}/${userId}/${encodeURIComponent(
-        title.value
-      )}`,
+      `http://127.0.0.1:5000/addComment/${userId}/${projectId}`,
       commentData,
       {
         headers: {
@@ -134,11 +122,11 @@ const submitComment = async (c) => {
 
 const deleteComment = async (id) => {
   const accessToken = localStorage.getItem("userToken");
-  const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+  let projectDetailsString = localStorage.getItem("projectDetails");
+  let projectDetails = JSON.parse(projectDetailsString);
+  let projectId = projectDetails._id;
   await axios.delete(
-    `http://127.0.0.1:5000/deleteComment/${userId}/${id}/${encodeURIComponent(
-      title.value
-    )}`,
+    `http://127.0.0.1:5000/deleteComment/${projectId}/${id}`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -930,7 +918,7 @@ export default {
             <div class="box">
               <h3 class="description">{{ com.comment }}</h3>
             </div>
-            <button v-if="idCheck(com.user)" @click="deleteComment(com.id)">
+            <button v-if="com.canDelete" @click="deleteComment(com.id)">
               Delete
             </button>
           </div>

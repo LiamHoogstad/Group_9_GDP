@@ -1083,41 +1083,37 @@ def get_project_audios(project_id):
             return jsonify({'message': 'Project not found'}), 404
     except Exception as e:
         return jsonify({'message': str(e)}), 500
-    
-@app.route('/getComments/<user_id>/<project_title>', methods=['GET'])
-def get_comments(user_id, project_title):
-    user = users_collection.find_one({"_id": ObjectId(user_id)})
+
+@app.route('/getComments/<project_id>', methods=['GET'])
+def get_comments(project_id):
+    project_id = ObjectId(project_id)
+    user = users_collection.find_one({"projects._id": project_id})
     if user:
-        project_title_decoded = project_title  
-        project = next((project for project in user.get('projects', []) if project['title'] == project_title_decoded), None)
+        project = next((project for project in user.get('projects', []) if project['_id'] == project_id), None)
         if project:
-            comments = []
-            if 'comments' in project:
-                for comment in project['comments']:
-                    commentUser = users_collection.find_one({"_id": ObjectId(comment.get('user'))}, {"_id": 0, "username": 1})
-                    comment['username'] = commentUser.get('username')
-                    comments.append(comment)
-            return jsonify(comments), 200
+            return jsonify(project['comments']), 200
         else:
             return jsonify({'message': 'Project not found'}), 404
     return jsonify({'message': 'User not found'}), 404
-
-@app.route('/addComment/<comment_user_id>/<user_id>/<project_title>', methods=['POST'])
-def add_comment(comment_user_id, user_id, project_title):
-    user = users_collection.find_one({"_id": ObjectId(user_id)})
+    
+@app.route('/addComment/<comment_user_id>/<project_id>', methods=['POST'])
+def add_comment(comment_user_id, project_id):
+    project_id = ObjectId(project_id)
+    user = users_collection.find_one({"projects._id": project_id})
     if user:
-        project_title_decoded = project_title  
-        project = next((project for project in user.get('projects', []) if project['title'] == project_title_decoded), None)
+        project = next((project for project in user.get('projects', []) if project['_id'] == project_id), None)
         if project:
+            print(project)
             data = request.json
             new_comment = {
                 'user': comment_user_id,
                 'date': data.get('date'),
                 'comment': data.get("comment"),
                 'id': data.get('id'),
+                'username': users_collection.find_one({"_id": ObjectId(comment_user_id)})['username'],
             }
             users_collection.update_one(
-                {'_id': user.get("_id"), 'projects.id': project.get('id')},
+                {'_id': user.get("_id"), 'projects._id': project_id},
                 {'$push': {'projects.$.comments': new_comment}}
             )
             return jsonify({"success": True, "message": "Comment added successfully"})
@@ -1126,16 +1122,39 @@ def add_comment(comment_user_id, user_id, project_title):
     else:
         return jsonify({'message': 'User not found'}), 404
 
-@app.route('/deleteComment/<user_id>/<comment_id>/<project_title>', methods=['DELETE'])
-def delete_comment(user_id, comment_id, project_title):
+@app.route('/deleteComment/<project_id>/<comment_id>', methods=['DELETE'])
+def delete_comment(project_id, comment_id):
+    project_id = ObjectId(project_id)
+    user = users_collection.find_one({"projects._id": project_id})
     try:
         result = users_collection.update_one(
-            {'_id': ObjectId(user_id), 'projects.title': project_title},
+            {'_id': user.get("_id"), 'projects._id': project_id},
             { "$pull": { "projects.$.comments": { "id": int(comment_id) } } }
         )
         return jsonify({"success": True, "message": "Vote successfully deleted"})
     except Exception as e:
         return jsonify({'message': 'Error deleting comment: ' + str(e)}), 500
+
+@app.route('/updateGenres/<user_id>/<project_title>', methods=['POST'])
+def update_genres(user_id, project_title):
+    data = request.json
+    user = users_collection.find_one({"_id": ObjectId(user_id)})
+    project_title_decoded = project_title
+    project = next((project for project in user.get('projects', []) if project['title'] == project_title_decoded), None)
+    genres = project.get('genres', [])
+
+    # Update project document with new audio file ID
+    users_collection.update_one(
+        {'_id': ObjectId(user_id), 'projects.title': project_title},
+        {'$set': {f'projects': {'audioFileId': new_file_id, 'audioFilename': filename}}}
+    )
+
+    # update in database
+    users_collection.update_one({ '_id': ObjectId(user_id), 'projects': { '$elemMatch': { 'id': project_id, 'projectUpvote.user': current_user_id }}},
+        { '$set': { 'projects.$.projectUpvote.$[elem]': user_upvote } },
+        array_filters=[{'elem.user': current_user_id}]
+    )
+    return jsonify({"success": True, "message": "Vote successfully changed"})
     
 if __name__ == '__main__':
     app.run(debug=True)
