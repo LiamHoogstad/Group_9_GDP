@@ -139,6 +139,7 @@ export default {
           type="password"
           variant="outlined"
           style="padding: 10px"
+          @keydown.enter="submitForm"
         ></v-text-field>
         <div class="submitButtonContainer">
           <v-btn
