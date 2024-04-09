@@ -142,6 +142,7 @@ export default {
           :append-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
           @click:append="showPassword = !showPassword"
           style="padding: 10px"
+          @keydown.enter="submitForm"
         ></v-text-field>
 
         <div class="submitButtonContainer">

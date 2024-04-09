@@ -254,23 +254,27 @@ export default {
   <div class="profilePage">
     <div class="profileContainer">
       <div class="profilePictureContainer">
-        <img
-          :src="profilePictureUrl"
-          alt="Profile Picture"
-          class="profilePicture"
-        />
+        <button @click="onClickFileInput">
+          <img
+            :src="profilePictureUrl"
+            alt="Profile Picture"
+            class="profilePicture"
+          />
+          <div class="hover">
+            <i class="fa-solid fa-pencil"></i>
+            Change Profile Picture
+          </div>
+        </button>
         <input
           type="file"
           @change="uploadProfilePicture($event.target.files[0])"
           style="display: none"
           ref="fileInput"
         />
-        <v-btn @click="onClickFileInput">Change Profile Picture</v-btn>
       </div>
       <div class="profilePageStatsContainer">
         <h1>{{ username }}</h1>
       </div>
-      <div class="separatorBar"></div>
       <div class="projectGrid">
         <div v-if="showAddProjectPopup" class="addProjectPopup">
           <div class="popupContent">
@@ -319,29 +323,30 @@ export default {
           class="project"
           @click="clickProject(project)"
         >
+          <button class="delete" @click.stop="deleteProject(project)">x</button>
           <h3>{{ project.title }}</h3>
           <p>{{ project.description }}</p>
-          <p
-            v-if="Array.isArray(project.genres) && project.genres.length > 0"
-            class="genre"
-          >
-            Genres: {{ project.genres.join(", ") }}
-          </p>
-          <p
-            v-if="
-              Array.isArray(project.instruments) &&
-              project.instruments.length > 0
-            "
-            class="genre"
-          >
-            Instruments: {{ project.instruments.join(", ") }}
-          </p>
+          <div class="tags">
+            <p
+              v-if="Array.isArray(project.genres) && project.genres.length > 0"
+              class="genre"
+            >
+              Genres: {{ project.genres.join(", ") }}
+            </p>
+            <p
+              v-if="
+                Array.isArray(project.instruments) &&
+                project.instruments.length > 0
+              "
+              class="genre"
+            >
+              Instruments: {{ project.instruments.join(", ") }}
+            </p>
+          </div>
           <button @click.stop="deleteProject(project)">Delete</button>
         </div>
         <div class="project addProject" @click="showAddProjectPopup = true">
-          <h3>
-            <span><img src="../assets/addFolder.png" alt="" /></span>
-          </h3>
+          <img class="add-icon" src="../assets/addFolder.png" alt="" />
           <p>Add Project</p>
         </div>
       </div>
@@ -363,43 +368,74 @@ export default {
 
 .profileContainer {
   width: 70%;
-  padding: 20px;
+  margin-top: 2em;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
+  gap: 2em;
 }
 
 .profilePictureContainer {
   width: 100%;
   max-width: 300px;
   text-align: center;
-  margin-bottom: 20px;
 }
 
 .profilePictureContainer button {
-  padding: 10px 20px;
-  margin-top: 20px;
+  border-radius: 100%;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0.1em 0.2em 0.05em var(--colour-dropshadow);
+}
+
+.profilePictureContainer button img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.profilePictureContainer button .hover {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  border-radius: 100%;
+  color: var(--colour-background);
+  background: var(--colour-text);
+  opacity: 0%;
+  transition: opacity 150ms;
+  font-weight: 600;
+}
+.profilePictureContainer button .hover:hover {
+  opacity: 60%;
+}
+
+.profilePictureContainer button .hover i {
+  margin-right: 0.5em;
 }
 
 .profilePicture {
   width: 100%;
-  max-width: 300px;
-  height: 300px;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
-.profilePictureContainer img {
-  max-width: 100%;
-  max-height: 100%;
-  border-radius: 50%;
-}
-
 .profilePageStatsContainer {
   width: 100%;
   text-align: center;
+}
+.profilePageStatsContainer h1 {
+  font-family: "Delta Gothic One";
+  line-height: 0.8em;
+  padding-bottom: 0.3em;
 }
 .separatorBar {
   height: 5px;
@@ -413,39 +449,87 @@ export default {
   border: var(--colour-panel-hard);
   gap: 20px;
   width: 70%;
+  margin-bottom: 2em;
 }
 
 .project {
   min-height: 150px;
   background-color: transparent;
-  border-radius: 10px;
+  border-radius: 0.78em;
   border: 3px dashed var(--colour-panel-hard);
   display: grid;
-  grid-template-rows: repeat(2, 1fr);
+  grid-template-rows: auto;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  --tag-colour: var(--colour-background);
+  --tag-bg-colour: var(--colour-panel-hard);
+  --delete-display: none;
+  text-align: center;
 }
 .project:hover {
   transform: scale(1.1);
+  color: var(--colour-background);
   background-color: var(--colour-interactable-hover);
-  transition: 0.2s ease-in-out;
+  border: none;
+  --tag-colour: var(--colour-text);
+  --tag-bg-colour: var(--colour-background);
+  --delete-display: inherit;
+  transition: 0.2s ease-in;
 }
-.project h3,
-.project p {
-  text-align: center;
+.project button.delete {
+  position: absolute;
+  display: var(--delete-display);
+  color: var(--colour-background);
+  background-color: transparent;
+  top: 0;
+  width: 1.5em;
+  height: 1.5em;
+  line-height: 0.8em;
+  padding-bottom: 0.2em;
+  border-radius: 100%;
+  font-family: "Fredoka";
+  margin-bottom: auto;
+}
+.project button.delete:hover {
+  color: var(--colour-interactable);
+  background-color: var(--colour-background);
+}
+
+.project h3 {
+  line-height: 1em;
+  font-weight: 700;
+}
+.project p.description {
+  margin: 0.25em;
+}
+
+.project .tags {
+  display: flex;
+  justify-content: center;
+  flex-flow: row wrap;
+  gap: 0.25em;
+  margin: 0 0.25em 0.25em 0.25em;
+}
+.project .tags p {
+  padding: 0 0.25em 0 0.25em;
+  border-radius: 0.25em;
+  color: var(--tag-colour);
+  background-color: var(--tag-bg-colour);
 }
 
 .addProject {
   background-color: var(--colour-panel-hard);
   cursor: pointer;
+  color: var(--colour-background);
+}
+.addProject p {
+  font-weight: 600;
+}
+.addProject .add-icon {
+  margin-top: 0.5em;
 }
 
-.addProject span {
-  font-size: 24px;
-  background-color: var(--colour-panel-soft);
-  color: var(--colour-text);
-}
 .project img {
   width: 100%;
   height: 75px;

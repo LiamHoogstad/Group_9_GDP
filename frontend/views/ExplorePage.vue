@@ -408,20 +408,29 @@ export default {
               <div class="description">
                 <h3>{{ project.description }}</h3>
                 <div>
-                  <p
-                    v-if="project.genres && project.genres.length > 0"
-                    v-for="genre in project.genres"
-                    class="genre"
-                  >
-                    {{ genre }}
-                  </p>
-                  <p
+                  <!-- Container for genres -->
+                  <div v-if="project.genres && project.genres.length > 0">
+                    <p
+                      v-for="(genre, index) in project.genres"
+                      :key="'genre-' + project._id + '-' + index"
+                      class="genre"
+                    >
+                      {{ genre }}
+                    </p>
+                  </div>
+
+                  <!-- Container for instruments -->
+                  <div
                     v-if="project.instruments && project.instruments.length > 0"
-                    v-for="instrument in project.instruments"
-                    class="genre"
                   >
-                    {{ instrument }}
-                  </p>
+                    <p
+                      v-for="(instrument, index) in project.instruments"
+                      :key="'instrument-' + project._id + '-' + index"
+                      class="genre"
+                    >
+                      {{ instrument }}
+                    </p>
+                  </div>
                 </div>
               </div>
               <div

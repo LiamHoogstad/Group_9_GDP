@@ -23,18 +23,6 @@ const isLoadingAudio = ref(true);
 const trackVolumes = [20, 40, 60, 100];
 const trackStartPositions = [0, 0, 0, 0];
 const newCommentText = ref("");
-const comments = ref([
-  { username: "User1", compliment: "So groovy!" },
-  { username: "User2", compliment: "Absolutely fantastic tune!" },
-  { username: "User3", compliment: "This beat is on fire!" },
-  { username: "User4", compliment: "Incredible vibes!" },
-  { username: "User5", compliment: "This is a masterpiece." },
-  { username: "User6", compliment: "Can't stop listening!" },
-  { username: "User7", compliment: "Music to my ears." },
-  { username: "User8", compliment: "A true work of art." },
-  { username: "User9", compliment: "Epic sound!" },
-  { username: "User10", compliment: "Drops are out of this world!" },
-]);
 let isOwnProfile = ref(true);
 
 watch(
@@ -101,7 +89,18 @@ const idCheck = async (id) => {
 const submitComment = async (c) => {
   const accessToken = localStorage.getItem("userToken");
   const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+  let projectDetailsString = localStorage.getItem("projectDetails");
+  console.log(projectDetailsString);
+  let projectDetails = JSON.parse(projectDetailsString);
+  console.log(projectDetails);
 
+  // Conditionally set projectId based on the _id type
+  let projectId;
+  if (typeof projectDetails._id === "object" && projectDetails._id.$oid) {
+    projectId = projectDetails._id.$oid; // If _id is an object with $oid
+  } else {
+    projectId = projectDetails._id; // If _id is a string
+  }
   try {
     let max =
       comments.value.length > 0
@@ -632,18 +631,6 @@ const sendProjectTitleUpdate = async () => {
     );
   }
 };
-const submitComment = () => {
-  if (newCommentText.value.trim()) {
-    const username = "Username";
-
-    comments.value.unshift({
-      username: username,
-      compliment: newCommentText.value,
-    });
-
-    newCommentText.value = "";
-  }
-};
 
 const contributeToProject = async () => {
   const accessToken = localStorage.getItem("userToken");
@@ -912,10 +899,8 @@ export default {
         </button></template
       >
       <div class="separatorLine"></div>
-      <div style="position: relative; margin-top: 2vh; z-index: 100">
-        <h2 style="font-family: 'Delta Gothic One'; z-index: -5001">
-          Comments
-        </h2>
+      <div style="margin-top: 50px">
+        <h2 style="font-family: 'Delta Gothic One'">Comments</h2>
       </div>
       <div
         style="
@@ -923,41 +908,31 @@ export default {
           justify-content: center;
           display: flex;
           align-items: center;
-          gap: 15px;
         "
       >
         <textarea
           type="text"
-          v-model="newCommentText"
+          v-model="comment"
           class="addComment"
           placeholder="Comment..."
-          style="position: relative; z-index: 0; width: 50%"
         />
         <button @click="submitComment">Post</button>
       </div>
-      <div
-        style="
-          position: relative;
-          width: 80%;
-          left: 10%;
-          padding: 2vh;
-          z-index: -5000;
-        "
-      >
+      <div>
         <ul>
-          <div
-            v-for="(comment, index) in comments"
-            :key="index"
-            class="comments"
-          >
+          <div class="comments" v-for="com in comments" :key="com._id">
             <div class="box">
-              <h3 class="user" style="font-weight: bold">
-                {{ comment.username }}
-              </h3>
+              <h3 class="user" style="font-weight: bold">{{ com.username }}</h3>
             </div>
-            <div class="box" style="font-weight: 100">
-              <h3 class="description">{{ comment.compliment }}</h3>
+            <div class="box">
+              <h3 class="user" style="font-weight: bold">{{ com.date }}</h3>
             </div>
+            <div class="box">
+              <h3 class="description">{{ com.comment }}</h3>
+            </div>
+            <button v-if="idCheck(com.user)" @click="deleteComment(com.id)">
+              Delete
+            </button>
           </div>
         </ul>
       </div>
