@@ -223,7 +223,6 @@ export default {
         <button @click="onClickFileInput">
           <img
             :src="profilePictureUrl"
-            rel="preload"
             alt="Profile Picture"
             class="profilePicture"
           />
@@ -336,18 +335,29 @@ export default {
 
 .profilePictureContainer button {
   border-radius: 100%;
+  position: relative;
   overflow: hidden;
   box-shadow: 0 0.1em 0.2em 0.05em var(--colour-dropshadow);
 }
 
+.profilePictureContainer button img {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 .profilePictureContainer button .hover {
   position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
-  top: 2em;
-  height: 300px;
-  width: 300px; /* Need a specific value to work */
+  
   border-radius: 100%;
   color: var(--colour-background);
   background: var(--colour-text);
@@ -407,6 +417,7 @@ export default {
   cursor: pointer;
   --tag-colour: var(--colour-background);
   --tag-bg-colour: var(--colour-panel-hard);
+  --delete-display: none;
   text-align: center;
 }
 .project:hover {
@@ -416,12 +427,15 @@ export default {
   border: none;
   --tag-colour: var(--colour-text);
   --tag-bg-colour: var(--colour-background);
-  transition: 0.2s ease-in-out;
+  --delete-display: inherit;
+  transition: 0.2s ease-in;
 }
 .project button.delete {
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  position: absolute;
+  display: var(--delete-display);
+  color: var(--colour-background);
+  background-color: transparent;
+  top: 0;
   width: 1.5em;
   height: 1.5em;
   line-height: 0.8em;
