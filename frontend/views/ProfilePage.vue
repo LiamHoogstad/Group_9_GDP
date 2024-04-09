@@ -3,159 +3,166 @@ import { ref, onMounted } from "vue";
 import axios from "axios";
 import blankProfilePicture from "../assets/blankProfilePicture.png";
 import { useRouter } from "vue-router";
-import { genres, instruments } from '../assets/globalVariables.js';
+import { genres, instruments } from "../assets/globalVariables.js";
 import MultipleDropdown from "../components/MultipleDropdown.vue";
 import HamburgerMenu from "../components/HamburgerMenu.vue";
 
 export default {
-    name: "ProfilePage",
-    setup() {
-        const username = ref("Loading...");
-        const showAddProjectPopup = ref(false);
-        const newProjectTitle = ref("");
-        const newProjectDescription = ref("");
-        const projects = ref([]);
-        const profilePictureUrl = ref(blankProfilePicture);
-        const fileInput = ref(null);
-        const router = useRouter();
-        const onClickFileInput = () => fileInput.value.click();
-        const selectedInstruments = ref([]);
-        const selectedGenres = ref([]);
-        const fetchProfilePicture = async () => {
-            const accessToken = localStorage.getItem("userToken");
-            if (!accessToken) {
-                profilePictureUrl.value = blankProfilePicture;
-                return;
-            }
-            const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
-            try {
-                const response = await axios.get(`http://127.0.0.1:5000/profilePicture/${userId}`, {
-                    headers: { Authorization: `Bearer ${accessToken}` }
-                });
-                if (response.data && response.status === 200) {
-                    profilePictureUrl.value = response.request.responseURL;
-                }
-                else {
-                    profilePictureUrl.value = blankProfilePicture;
-                }
-            }
-            catch (error) {
-                profilePictureUrl.value = blankProfilePicture;
-            }
-        };
-        const fetchUsername = async () => {
-            const accessToken = localStorage.getItem("userToken");
-            console.log(accessToken);
-            const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
-            console.log(userId);
-            if (accessToken) {
-                try {
-                    const response = await axios.get(`http://127.0.0.1:5000/fetchUsername/${userId}`, {
-                        headers: { Authorization: `Bearer ${accessToken}` }
-                    });
-                    username.value = response.data.username;
-                    projects.value = response.data.projects;
-                }
-                catch (error) {
-                    username.value = "Error loading username";
-                    projects.value = [];
-                    console.error("Error:", error);
-                }
-                await fetchProfilePicture();
-                //await fetchProjects();
-            }
-            else {
-                username.value = "Not logged in";
-                projects.value = [];
-            }
-        };
-        const fetchProjects = async () => {
-            const accessToken = localStorage.getItem("userToken");
-            const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
-            if (!accessToken)
-                return;
-            try {
-                const response = await axios.get(`http://127.0.0.1:5000/getProjects/${userId}`, {
-                    headers: { Authorization: `Bearer ${accessToken}` }
-                });
-                projects.value = response.data;
-                console.log(JSON.stringify(projects.value));
-            }
-            catch (error) {
-                console.error("Error fetching projects:", error);
-            }
-        };
-        const uploadProfilePicture = async (file) => {
-            if (!file)
-                return;
-            const formData = new FormData();
-            formData.append("file", file);
-            const accessToken = localStorage.getItem("userToken");
-            try {
-                await axios.post("http://127.0.0.1:5000/uploadProfilePicture", formData, {
-                    headers: {
-                        "Content-Type": "multipart/form-data",
-                        Authorization: `Bearer ${accessToken}`
-                    }
-                });
-                await fetchProfilePicture();
-            }
-            catch (error) {
-                console.error("Upload Error:", error);
-            }
-        };
-        onMounted(async () => {
-            await fetchUsername();
-        });
-        const addProject = () => {
-          let max = projects.value.length > 0 ? projects.value.reduce((max, proj) => (parseInt(proj.id) > max ? parseInt(proj.id) : max), parseInt(projects.value[0].id)) : 0;
-          const newProject = {
-              id: max + 1,
-              title: newProjectTitle.value,
-              description: newProjectDescription.value,
-              genres: selectedGenres.value.join(','),
-              instruments: selectedInstruments.value.join(',')
-          };
-          projects.value.push(newProject);
-          newProjectTitle.value = "";
-          newProjectDescription.value = "";
-          selectedGenres.value = [];
-          showAddProjectPopup.value = false;
-          selectedInstruments.value = [];
-          addProjectToDB(newProject);
-        };
-        const addProjectToDB = async (project) => {
-          const accessToken = localStorage.getItem("userToken");
-          const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
-          try {
-              await axios.post(`http://127.0.0.1:5000/addProject/${userId}`, project, {
-                  headers: {
-                      Authorization: `Bearer ${accessToken}`
-                  }
-              });
-              console.log("Project added successfully");
+  name: "ProfilePage",
+  setup() {
+    const username = ref("Loading...");
+    const showAddProjectPopup = ref(false);
+    const newProjectTitle = ref("");
+    const newProjectDescription = ref("");
+    const projects = ref([]);
+    const profilePictureUrl = ref(blankProfilePicture);
+    const fileInput = ref(null);
+    const router = useRouter();
+    const onClickFileInput = () => fileInput.value.click();
+    const selectedInstruments = ref([]);
+    const selectedGenres = ref([]);
+    const fetchProfilePicture = async () => {
+      const accessToken = localStorage.getItem("userToken");
+      if (!accessToken) {
+        profilePictureUrl.value = blankProfilePicture;
+        return;
+      }
+      const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+      try {
+        const response = await axios.get(
+          `http://127.0.0.1:5000/profilePicture/${userId}`,
+          {
+            headers: { Authorization: `Bearer ${accessToken}` },
           }
-          catch (error) {
-              console.error("Error adding project:", error);
+        );
+        if (response.data && response.status === 200) {
+          profilePictureUrl.value = response.request.responseURL;
+        } else {
+          profilePictureUrl.value = blankProfilePicture;
+        }
+      } catch (error) {
+        profilePictureUrl.value = blankProfilePicture;
+      }
+    };
+    const fetchUsername = async () => {
+      const accessToken = localStorage.getItem("userToken");
+      console.log(accessToken);
+      const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+      console.log(userId);
+      if (accessToken) {
+        try {
+          const response = await axios.get(
+            `http://127.0.0.1:5000/fetchUsername/${userId}`,
+            {
+              headers: { Authorization: `Bearer ${accessToken}` },
+            }
+          );
+          username.value = response.data.username;
+          projects.value = response.data.projects;
+        } catch (error) {
+          username.value = "Error loading username";
+          projects.value = [];
+          console.error("Error:", error);
+        }
+        await fetchProfilePicture();
+        //await fetchProjects();
+      } else {
+        username.value = "Not logged in";
+        projects.value = [];
+      }
+    };
+    const fetchProjects = async () => {
+      const accessToken = localStorage.getItem("userToken");
+      const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+      if (!accessToken) return;
+      try {
+        const response = await axios.get(
+          `http://127.0.0.1:5000/getProjects/${userId}`,
+          {
+            headers: { Authorization: `Bearer ${accessToken}` },
           }
-        };
-        const clickProject = async (project) => {
-            try {
-                router.push({ name: "ProjectView", params: { title: project.title } });
-                console.log("Project opened successfully");
-            }
-            catch (error) {
-                console.error("Error adding project:", error);
-            }
-        };
+        );
+        projects.value = response.data;
+        console.log(JSON.stringify(projects.value));
+      } catch (error) {
+        console.error("Error fetching projects:", error);
+      }
+    };
+    const uploadProfilePicture = async (file) => {
+      if (!file) return;
+      const formData = new FormData();
+      formData.append("file", file);
+      const accessToken = localStorage.getItem("userToken");
+      try {
+        await axios.post(
+          "http://127.0.0.1:5000/uploadProfilePicture",
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+        await fetchProfilePicture();
+      } catch (error) {
+        console.error("Upload Error:", error);
+      }
+    };
+    onMounted(async () => {
+      await fetchUsername();
+    });
+    const addProject = () => {
+      let max =
+        projects.value.length > 0
+          ? projects.value.reduce(
+              (max, proj) =>
+                parseInt(proj.id) > max ? parseInt(proj.id) : max,
+              parseInt(projects.value[0].id)
+            )
+          : 0;
+      const newProject = {
+        id: max + 1,
+        title: newProjectTitle.value,
+        description: newProjectDescription.value,
+        genres: selectedGenres.value.join(","),
+        instruments: selectedInstruments.value.join(","),
+      };
+      projects.value.push(newProject);
+      newProjectTitle.value = "";
+      newProjectDescription.value = "";
+      selectedGenres.value = [];
+      showAddProjectPopup.value = false;
+      selectedInstruments.value = [];
+      addProjectToDB(newProject);
+    };
+    const addProjectToDB = async (project) => {
+      const accessToken = localStorage.getItem("userToken");
+      const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+      try {
+        await axios.post(
+          `http://127.0.0.1:5000/addProject/${userId}`,
+          project,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+        console.log("Project added successfully");
+        await fetchUsername();
+      } catch (error) {
+        console.error("Error adding project:", error);
+      }
+    };
 
-        const handleSelectedInstrumentsUpdate = async (updatedSelectedOptions) => {
-            selectedInstruments.value = updatedSelectedOptions;
-        }
+    const handleSelectedInstrumentsUpdate = async (updatedSelectedOptions) => {
+      selectedInstruments.value = updatedSelectedOptions;
+    };
 
-        const handleSelectedGenresUpdate = async (updatedSelectedOptions) => {
-            selectedGenres.value = updatedSelectedOptions;
-        }
+    const handleSelectedGenresUpdate = async (updatedSelectedOptions) => {
+      selectedGenres.value = updatedSelectedOptions;
+    };
     const deleteProject = async (project) => {
       // Confirm deletion
       if (
@@ -166,13 +173,16 @@ export default {
         return;
       }
       const accessToken = localStorage.getItem("userToken");
-      const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+      const projectId =
+        typeof project._id === "object" && project._id.$oid
+          ? project._id.$oid
+          : project._id; // Adjusted to get projectId
+
       try {
-        // Use encodeURIComponent to safely encode the project title in the URL
         await axios.delete(
-          `http://127.0.0.1:5000/deleteProject/${userId}/${encodeURIComponent(
-            project.title
-          )}`,
+          `http://127.0.0.1:5000/deleteProject/${encodeURIComponent(
+            projectId
+          )}`, // Use projectId in the URL
           {
             headers: {
               Authorization: `Bearer ${accessToken}`,
@@ -180,42 +190,66 @@ export default {
           }
         );
         console.log("Project deleted successfully");
+        // Assuming fetchUsername fetches the updated list of projects
         await fetchUsername();
       } catch (error) {
-        console.error("Error deleting the project:", error.response.data);
+        console.error(
+          "Error deleting the project:",
+          error.response ? error.response.data : error
+        );
       }
     };
-        return {
-            username,
-            projects,
-            addProject,
-            showAddProjectPopup,
-            newProjectTitle,
-            newProjectDescription,
-            genres: genres,
-            instruments: instruments,
-            onClickFileInput,
-            fileInput,
-            profilePictureUrl,
-            onMounted,
-            uploadProfilePicture,
-            clickProject,
-            addProjectToDB,
-            fetchUsername,
-            selectedGenres,
-            selectedInstruments,
-            handleSelectedInstrumentsUpdate,
-            handleSelectedGenresUpdate,
-            deleteProject,
+    const clickProject = async (projectDetails) => {
+      try {
+        console.log("This is what project should be\n" + projectDetails);
+        localStorage.setItem("projectDetails", JSON.stringify(projectDetails));
+        setTimeout(() => {
+          router.push({
+            name: "ProjectView",
+            params: { title: projectDetails.title },
+          });
+        }, 1000);
+
+        console.log("Project opened successfully");
+      } catch (error) {
+        console.error("Error opening project:", error);
+      }
     };
-    },
-    components: { MultipleDropdown, HamburgerMenu }
+
+    return {
+      username,
+      projects,
+      addProject,
+      showAddProjectPopup,
+      newProjectTitle,
+      newProjectDescription,
+      genres: genres,
+      instruments: instruments,
+      onClickFileInput,
+      fileInput,
+      profilePictureUrl,
+      onMounted,
+      uploadProfilePicture,
+      clickProject,
+      addProjectToDB,
+      fetchUsername,
+      selectedGenres,
+      selectedInstruments,
+      handleSelectedInstrumentsUpdate,
+      handleSelectedGenresUpdate,
+      deleteProject,
+    };
+  },
+  components: { MultipleDropdown, HamburgerMenu },
 };
 </script>
 
 <template>
   <!-- Fontawesome CDN Link -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css">
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css"
+  />
   <HamburgerMenu />
   <div class="profilePage">
     <div class="profileContainer">
@@ -287,8 +321,21 @@ export default {
         >
           <h3>{{ project.title }}</h3>
           <p>{{ project.description }}</p>
-          <p v-if="Array.isArray(project.genres) && project.genres.length > 0" class="genre">Genres: {{ project.genres.join(', ')}}</p>
-          <p v-if="Array.isArray(project.instruments) && project.instruments.length > 0" class="genre">Instruments: {{ project.instruments.join(', ') }}</p>
+          <p
+            v-if="Array.isArray(project.genres) && project.genres.length > 0"
+            class="genre"
+          >
+            Genres: {{ project.genres.join(", ") }}
+          </p>
+          <p
+            v-if="
+              Array.isArray(project.instruments) &&
+              project.instruments.length > 0
+            "
+            class="genre"
+          >
+            Instruments: {{ project.instruments.join(", ") }}
+          </p>
           <button @click.stop="deleteProject(project)">Delete</button>
         </div>
         <div class="project addProject" @click="showAddProjectPopup = true">

@@ -33,6 +33,7 @@ const comments = ref([
   { username: "User9", compliment: "Epic sound!" },
   { username: "User10", compliment: "Drops are out of this world!" },
 ]);
+let isOwnProfile = ref(true);
 
 watch(
   audioFiles,
@@ -77,9 +78,41 @@ const togglePlay = async () => {
     isPlaying.value = false;
   }
 };
+function normalizeProjectDetails(projectDetails) {
+  let normalizedDetails = { ...projectDetails };
+
+  // Convert _id if it's in object format
+  if (typeof normalizedDetails._id === "object" && normalizedDetails._id.$oid) {
+    normalizedDetails._id = normalizedDetails._id.$oid;
+  }
+
+  // Check and convert combinedAudioId if necessary
+  if (
+    normalizedDetails.combinedAudioId &&
+    typeof normalizedDetails.combinedAudioId === "object" &&
+    normalizedDetails.combinedAudioId.$oid
+  ) {
+    normalizedDetails.combinedAudioId = normalizedDetails.combinedAudioId.$oid;
+  }
+
+  // If there are other fields with similar structure, convert them here
+
+  return normalizedDetails;
+}
 
 async function streamAllAudioFiles() {
   isLoadingAudio.value = true;
+
+  let projectDetailsString = localStorage.getItem("projectDetails");
+  let projectDetails = JSON.parse(projectDetailsString);
+  let normalizedProjectDetails = normalizeProjectDetails(projectDetails);
+  if (!projectDetailsString) {
+    console.error("Project details not found.");
+    isLoadingAudio.value = false;
+    return;
+  }
+
+  const projectId = normalizedProjectDetails._id;
 
   const audioPlayer = document.getElementById("projectAudio");
   if (isPlaying.value) {
@@ -88,26 +121,28 @@ async function streamAllAudioFiles() {
   }
 
   const accessToken = localStorage.getItem("userToken");
-  const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
 
   try {
-    console.log("Combining all audio files in the backend...");
-    const response = await axios.get(
-      `http://127.0.0.1:5000/streamProjectAudios/${userId}/${encodeURIComponent(
-        title.value
-      )}`,
+    // First, ensure the audio files are combined in the backend and get the ID for the combined audio.
+    let combineResponse = await axios.get(
+      `http://127.0.0.1:5000/streamProjectAudios/${projectId}`,
       { headers: { Authorization: `Bearer ${accessToken}` } }
     );
-    console.log("Audio files combined successfully: ");
 
-    const combinedAudioUrl = `http://127.0.0.1:5000/streamProjectCombinedAudio/${userId}/${encodeURIComponent(
-      title.value
-    )}`;
-    audioSrc.value = combinedAudioUrl + "?v=" + new Date().getTime(); // Adding a timestamp to prevent caching
+    console.log(
+      "Audio files combined successfully:",
+      combineResponse.data.combinedAudioId
+    );
 
+    // Step 2: Stream the Combined Audio
+    const combinedAudioId = combineResponse.data.combinedAudioId;
+    const combinedAudioUrl = `http://127.0.0.1:5000/streamAudio/${combinedAudioId}`;
+    audioSrc.value = combinedAudioUrl;
+
+    console.log("Preparing to stream combined audio files...");
     await new Promise((resolve, reject) => {
       const audioPlayer = document.getElementById("projectAudio");
-      audioPlayer.src = audioSrc.value; // Use the updated src with the timestamp
+      audioPlayer.src = audioSrc.value;
 
       audioPlayer.onloadeddata = () => {
         console.log("Audio data has loaded and is now ready to play");
@@ -115,17 +150,18 @@ async function streamAllAudioFiles() {
         resolve();
       };
 
-      audioPlayer.onerror = () => {
-        console.error("Error loading combined audio");
-        reject("Error loading audio");
+      audioPlayer.onerror = (event) => {
+        console.error("Error loading combined audio", event);
+        isLoadingAudio.value = false;
+        reject(new Error("Error loading combined audio"));
       };
-
       audioPlayer.load();
     });
 
     combinedAudioReady.value = true;
   } catch (error) {
-    console.error("Error combining or streaming audio files:", error);
+    console.error("Error in combining or streaming audio files:", error);
+    isLoadingAudio.value = false;
   }
 }
 
@@ -133,12 +169,22 @@ async function fetchAudioFiles() {
   isLoadingAudio.value = true;
   const accessToken = localStorage.getItem("userToken");
   const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+  let projectDetailsString = localStorage.getItem("projectDetails");
+  console.log(projectDetailsString);
+  let projectDetails = JSON.parse(projectDetailsString);
+  console.log(projectDetails);
+
+  // Conditionally set projectId based on the _id type
+  let projectId;
+  if (typeof projectDetails._id === "object" && projectDetails._id.$oid) {
+    projectId = projectDetails._id.$oid; // If _id is an object with $oid
+  } else {
+    projectId = projectDetails._id; // If _id is a string
+  }
 
   try {
     const response = await axios.get(
-      `http://127.0.0.1:5000/getAudios/${userId}/${encodeURIComponent(
-        title.value
-      )}`,
+      `http://127.0.0.1:5000/getProjectDetails/${projectId}/${userId}`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -146,32 +192,23 @@ async function fetchAudioFiles() {
       }
     );
 
-    if (!response.data.length) {
-      console.log("No audio files were found for this user.");
-      audioFiles.value = [];
-      trackVolumes.value = [];
-      trackStartPositions.value = [];
-    } else {
-      audioFiles.value = response.data.map((file) => ({
+    console.log("Audio files and project ownership fetched:", response.data);
+    audioFiles.value =
+      response.data.audioFiles?.map((file) => ({
         ...file,
         src: `http://127.0.0.1:5000/streamAudio/${file.audioFileId}`,
-      }));
+      })) || [];
 
-      trackVolumes.value = response.data.map((file) => file.Volumes);
-      trackStartPositions.value = response.data.map(
-        (file) => file.Start_Position
-      );
+    trackVolumes.value = audioFiles.value.map((file) => file.Volumes);
+    trackStartPositions.value = audioFiles.value.map(
+      (file) => file.Start_Position
+    );
 
-      console.log("Audio files have been fetched and processed");
-      console.log(JSON.stringify(audioFiles, null, 2));
-      console.log("Track Volumes:", trackVolumes.value);
-      console.log("Track Volumes:", trackStartPositions.value);
-      // console.log("Track Volume 3:", trackVolumes.value[2]);
-    }
+    isOwnProfile = response.data.isOwnProfile;
+    console.log("Is this the user's own project?:", isOwnProfile);
   } catch (error) {
-    console.error("Error fetching audio files:", error);
+    console.error("Error fetching project details:", error);
   } finally {
-    // Ensure isLoadingAudio is set to false when the operation is complete
     isLoadingAudio.value = false;
   }
 }
@@ -351,13 +388,23 @@ const updateFile = async (index, event) => {
     formData.append("file", file);
     const accessToken = localStorage.getItem("userToken");
     const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+    let projectDetailsString = localStorage.getItem("projectDetails");
+    console.log(projectDetailsString);
+    let projectDetails = JSON.parse(projectDetailsString);
+    console.log(projectDetails);
+
+    // Conditionally set projectId based on the _id type
+    let projectId;
+    if (typeof projectDetails._id === "object" && projectDetails._id.$oid) {
+      projectId = projectDetails._id.$oid; // If _id is an object with $oid
+    } else {
+      projectId = projectDetails._id; // If _id is a string
+    }
 
     try {
       console.log("Uploading file...");
       const response = await axios.post(
-        `http://127.0.0.1:5000/uploadAudioToProject/${userId}/${encodeURIComponent(
-          title.value
-        )}/${index}`,
+        `http://127.0.0.1:5000/uploadAudioToProject/${userId}/${projectId}/${index}`, // Updated URL
         formData,
         {
           headers: {
@@ -396,11 +443,23 @@ const deleteAudioFile = async (index) => {
 
   const accessToken = localStorage.getItem("userToken");
   const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+  let projectDetailsString = localStorage.getItem("projectDetails");
+  console.log(projectDetailsString);
+  let projectDetails = JSON.parse(projectDetailsString);
+  console.log(projectDetails);
+
+  // Conditionally set projectId based on the _id type
+  let projectId;
+  if (typeof projectDetails._id === "object" && projectDetails._id.$oid) {
+    projectId = projectDetails._id.$oid; // If _id is an object with $oid
+  } else {
+    projectId = projectDetails._id; // If _id is a string
+  }
 
   try {
     console.log("Deleting file...");
     await axios.delete(
-      `http://127.0.0.1:5000/deleteAudio/${userId}/${fileToDelete.audioFileId}`,
+      `http://127.0.0.1:5000/deleteAudio/${projectId}/${fileToDelete.audioFileId}`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -483,6 +542,50 @@ const submitComment = () => {
     newCommentText.value = "";
   }
 };
+
+const contributeToProject = async () => {
+  const accessToken = localStorage.getItem("userToken");
+  const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+  let projectDetailsString = localStorage.getItem("projectDetails");
+  console.log(projectDetailsString);
+  let projectDetails = JSON.parse(projectDetailsString);
+  console.log(projectDetails);
+
+  // Conditionally set projectId based on the _id type
+  let projectId;
+  if (typeof projectDetails._id === "object" && projectDetails._id.$oid) {
+    projectId = projectDetails._id.$oid; // If _id is an object with $oid
+  } else {
+    projectId = projectDetails._id; // If _id is a string
+  }
+  try {
+    const accessToken = localStorage.getItem("userToken");
+    // Make the post request and wait for the response
+    const response = await axios.post(
+      `http://127.0.0.1:5000/contributeToProject`,
+      {
+        projectId: projectId,
+        userId: userId,
+      },
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }
+    );
+
+    // If the response is successful, execute the following
+    alert("Project copied successfully!");
+    console.log("about to parse");
+    const newProject = JSON.parse(response.data.newProject);
+    consol.log("about to print");
+    console.log("New Project:", newProject);
+    console.log("about to redirect");
+    clickProject(newProject); // Use the new project's _id to handle the project
+  } catch (error) {
+    // If there is an error, log it and show an alert
+    console.error("Error contributing to project:", error);
+    alert(error.response?.data.message || "An error occurred");
+  }
+};
 </script>
 
 <script>
@@ -542,120 +645,170 @@ export default {
           <table>
             <tr v-for="(audio, index) in audioFiles" :key="index">
               <td class="trackControls">
-                <button
-                  class="delete"
-                  title="Delete Track"
-                  @click="deleteAudioFile(index)"
-                >
-                  <h2>x</h2>
-                </button>
+                <template v-if="isOwnProfile">
+                  <button
+                    class="delete"
+                    title="Delete Track"
+                    @click="deleteAudioFile(index)"
+                  >
+                    <h2>x</h2>
+                  </button>
+                </template>
                 <div class="properties">
-                  <textarea
-                    placeholder="Enter track name..."
-                    v-model="audio.audioFilename"
-                    @keyup.enter.stop="
-                      sendTrackNameUpdate(
-                        audio.audioFileId,
-                        audio.audioFilename
-                      )
-                    "
-                  ></textarea>
-                  <div class="volume">
-                    <Slider
-                      :value="audio.Volumes"
-                      @update:modelValue="
-                        (newVolume) =>
-                          debouncedUpdateTrackVolume(audio, index, newVolume)
+                  <template v-if="isOwnProfile">
+                    <textarea
+                      placeholder="Enter track name..."
+                      v-model="audio.audioFilename"
+                      @keyup.enter.stop="
+                        sendTrackNameUpdate(
+                          audio.audioFileId,
+                          audio.audioFilename
+                        )
                       "
-                      :min="0"
-                      :max="100"
-                    />
-                    <button
-                      title="Solo Track"
-                      :style="{
-                        backgroundColor: audio.Solo
-                          ? 'var(--colour-interactable)'
-                          : 'var(--colour-background)',
-                        color: audio.Solo
-                          ? 'var(--colour-background)'
-                          : 'var(--colour-interactable)',
-                      }"
-                      @click="updateTrackSolo(audio, index)"
-                    >
-                      S
-                    </button>
-                    <button
-                      title="Mute Track"
-                      :style="{
-                        backgroundColor: audio.Mute
-                          ? 'var(--colour-interactable)'
-                          : 'var(--colour-background)',
-                        color: audio.Mute
-                          ? 'var(--colour-background)'
-                          : 'var(--colour-interactable)',
-                      }"
-                      @click="updateTrackMute(audio, index)"
-                    >
-                      M
-                    </button>
-                    <input
-                      type="file"
-                      :id="'file-input-' + index"
-                      @change="(event) => updateFile(index, event)"
-                      accept="audio/*"
-                      style="display: none"
-                    /><button
-                      v-if="isLoadingAudio"
-                      title="Change Track"
-                      style="cursor: not-allowed"
-                    >
-                      C
-                    </button>
-                    <button
-                      v-else
-                      title="Change Track"
-                      @click="triggerFileInput(index)"
-                    >
-                      C
-                    </button>
-                  </div>
+                    ></textarea>
+                  </template>
+                  <template v-else>
+                    <textarea
+                      placeholder="Enter track name..."
+                      v-model="audio.audioFilename"
+                      @keyup.enter.stop="
+                        sendTrackNameUpdate(
+                          audio.audioFileId,
+                          audio.audioFilename
+                        )
+                      "
+                      disabled
+                    ></textarea>
+                  </template>
+
+                  <template v-if="isOwnProfile">
+                    <div class="volume">
+                      <Slider
+                        :value="audio.Volumes"
+                        @update:modelValue="
+                          (newVolume) =>
+                            debouncedUpdateTrackVolume(audio, index, newVolume)
+                        "
+                        :min="0"
+                        :max="100"
+                      />
+                      <button
+                        title="Solo Track"
+                        :style="{
+                          backgroundColor: audio.Solo
+                            ? 'var(--colour-interactable)'
+                            : 'var(--colour-background)',
+                          color: audio.Solo
+                            ? 'var(--colour-background)'
+                            : 'var(--colour-interactable)',
+                        }"
+                        @click="updateTrackSolo(audio, index)"
+                      >
+                        S
+                      </button>
+                      <button
+                        title="Mute Track"
+                        :style="{
+                          backgroundColor: audio.Mute
+                            ? 'var(--colour-interactable)'
+                            : 'var(--colour-background)',
+                          color: audio.Mute
+                            ? 'var(--colour-background)'
+                            : 'var(--colour-interactable)',
+                        }"
+                        @click="updateTrackMute(audio, index)"
+                      >
+                        M
+                      </button>
+                      <input
+                        type="file"
+                        :id="'file-input-' + index"
+                        @change="(event) => updateFile(index, event)"
+                        accept="audio/*"
+                        style="display: none"
+                      /><button
+                        v-if="isLoadingAudio"
+                        title="Change Track"
+                        style="cursor: not-allowed"
+                      >
+                        C
+                      </button>
+                      <button
+                        v-else
+                        title="Change Track"
+                        @click="() => triggerFileInput(index)"
+                      >
+                        C
+                      </button>
+                    </div>
+                  </template>
                 </div>
               </td>
               <td class="trackPreview">
-                <AudioEditor
-                  @update:offset="
-                    (trackPos) =>
-                      debouncedUpdateTrackPosition(audio, index, trackPos)
-                  "
-                  :initOffset="audio.Start_Position"
-                  :initTrackLength="180.0"
-                  :initFileLength="10.0"
-                />
+                <template v-if="isOwnProfile">
+                  <AudioEditor
+                    @update:offset="
+                      (trackPos) =>
+                        debouncedUpdateTrackPosition(audio, index, trackPos)
+                    "
+                    :initOffset="audio.Start_Position"
+                    :initTrackLength="180.0"
+                    :initFileLength="10.0"
+                  />
+                </template>
+
+                <template v-else>
+                  <AudioEditor
+                    @update:offset="
+                      (trackPos) =>
+                        debouncedUpdateTrackPosition(audio, index, trackPos)
+                    "
+                    :initOffset="audio.Start_Position"
+                    :initTrackLength="180.0"
+                    :initFileLength="10.0"
+                    style="pointer-events: none"
+                /></template>
               </td>
             </tr>
           </table>
         </div>
       </div>
-      <input
-        type="file"
-        id="new-file-input"
-        @change="(event) => updateFile(audioFiles.length, event)"
-        accept="audio/*"
-        style="display: none"
-      />
-      <p v-if="isLoadingAudio" style="text-align: center; margin-top: 20px">
-        Please wait for files to load...
-      </p>
-      <button
-        v-if="isLoadingAudio"
-        style="margin-top: 20px; cursor: not-allowed"
-        disabled
+      <template v-if="isOwnProfile">
+        <input
+          type="file"
+          id="new-file-input"
+          @change="(event) => updateFile(audioFiles.length, event)"
+          accept="audio/*"
+          style="display: none"
+        />
+        <p v-if="isLoadingAudio" style="text-align: center; margin-top: 20px">
+          Please wait for files to load...
+        </p>
+        <button
+          v-if="isLoadingAudio"
+          style="margin-top: 20px; cursor: not-allowed"
+          disabled
+        >
+          Add Audio File
+        </button>
+        <button v-else @click="triggerNewFileInput" style="margin-top: 20px">
+          Add Audio File
+        </button> </template
+      ><template v-else
+        ><p v-if="isLoadingAudio" style="text-align: center; margin-top: 20px">
+          Please wait for files to load...
+        </p>
+        <button
+          v-if="isLoadingAudio"
+          style="margin-top: 20px; cursor: not-allowed"
+          disabled
+        >
+          Contribute
+        </button>
+        <button v-else @click="contributeToProject" style="margin-top: 20px">
+          Contribute
+        </button></template
       >
-        Add Audio File
-      </button>
-      <button v-else @click="triggerNewFileInput" style="margin-top: 20px">
-        Add Audio File
-      </button>
       <div class="separatorLine"></div>
       <div style="position: relative; margin-top: 2vh; z-index: 100">
         <h2 style="font-family: 'Delta Gothic One'; z-index: -5001">

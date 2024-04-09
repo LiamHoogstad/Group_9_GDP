@@ -32,32 +32,45 @@ export default {
     const selectedInstruments = ref([]);
     const selectedGenres = ref([]);
     const selectedFilters = ref([]);
-    const contributeToProject = async (projectUser, projectId) => {
+
+    const contributeToProject = async (projectId) => {
       const accessToken = localStorage.getItem("userToken");
       const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+      // let projectDetailsString = localStorage.getItem("projectDetails");
+      // let projectDetails = JSON.parse(projectDetailsString);
+      console.log("contribute function\n" + JSON.stringify(projectId));
+      projectId = projectId._id;
+      console.log(projectId);
+
       try {
         const response = await axios.post(
           `http://127.0.0.1:5000/contributeToProject`,
           {
             projectId: projectId,
-            projectCreator: projectUser,
             userId: userId,
+          },
+          {
+            headers: { Authorization: `Bearer ${accessToken}` },
           }
         );
+
         alert("Project copied successfully!");
-        const newProjectTitle = response.data.newProjectTitle;
-        console.log("NEW PROJECT TITLE" + newProjectTitle);
-        await clickProject(newProjectTitle); // assuming the ProjectView route expects an id parameter
+        console.log("about to parse");
+        console.log(JSON.stringify(response.data.newProject, null, 2)); // Ensure accessing data correctly
+        const newProject = JSON.parse(response.data.newProject); // Only needed if newProject is a string
+        console.log("about to print");
+        console.log("New Project:", newProject);
+        console.log("about to redirect");
+        clickProject(newProject); // Ensure clickProject can handle the newProject format
       } catch (error) {
         console.error("Error contributing to project:", error);
         alert(error.response?.data.message || "An error occurred");
       }
     };
-    const playCombinedAudio = async (username, title) => {
-      if (
-        currentProject.value === title &&
-        currentProjectUser.value === username
-      ) {
+    const playCombinedAudio = async (projectId, project) => {
+      console.log(projectId);
+      let combinedAudioId = project.combinedAudioId;
+      if (currentProject.value === projectId) {
         if (isPlaying.value) {
           audio.pause();
         } else {
@@ -68,10 +81,9 @@ export default {
         audio.pause();
         isPlaying.value = false;
         currentProject.value = null;
-        currentProjectUser.value = null;
         try {
           const response = await axios.get(
-            `http://127.0.0.1:5000/explorePageAudio/${username}/${title}`,
+            `http://127.0.0.1:5000/streamAudio/${projectId}`,
             {
               responseType: "blob",
             }
@@ -80,21 +92,17 @@ export default {
           audio.src = audioSrc.value;
           audio.play();
           isPlaying.value = true;
-          currentProject.value = title;
-          currentProjectUser.value = username;
+          currentProject.value = projectId;
           errorFile.value = null;
         } catch (error) {
-          errorFile.value = title;
+          errorFile.value = projectId;
           console.error("Error fetching audio file:", error);
+          alert("There is no preview available for this project");
         }
       }
     };
-    const isProjectPlaying = (project, user) => {
-      return (
-        currentProjectUser.value === user &&
-        currentProject.value === project &&
-        isPlaying.value
-      );
+    const isProjectPlaying = (projectId) => {
+      return currentProject.value === projectId && isPlaying.value;
     };
 
     const fetchAllProjects = async () => {
@@ -288,14 +296,17 @@ export default {
       selectedFilters.value = updatedSelectedOptions;
     };
 
-    const clickProject = async (newProjectTitle) => {
+    const clickProject = async (projectDetails) => {
       try {
-        console.log("trying to run");
-        // Make sure this matches the route definition in your router setup
-        router.push({
-          name: "ProjectView",
-          params: { title: newProjectTitle },
-        });
+        console.log("This is what project should be\n" + projectDetails);
+        localStorage.setItem("projectDetails", JSON.stringify(projectDetails));
+        setTimeout(() => {
+          router.push({
+            name: "ProjectView",
+            params: { title: projectDetails.title },
+          });
+        }, 1000);
+
         console.log("Project opened successfully");
       } catch (error) {
         console.error("Error opening project:", error);
@@ -386,7 +397,7 @@ export default {
         <div class="leftPanel">
           <h3
             class="title"
-            @click="clickProject(project.title)"
+            @click="clickProject(project)"
             style="cursor: pointer"
           >
             {{ project.title }}
@@ -442,7 +453,7 @@ export default {
         <div class="interact">
           <button
             class="contribute"
-            @click="contributeToProject(project.user, project.id)"
+            @click="contributeToProject(project)"
             :style="{
               backgroundColor: 'white',
               color: '#77a4f9',
@@ -468,15 +479,17 @@ export default {
             </button>
           </div>
         </div>
-        <button
-          class="play"
-          @click="playCombinedAudio(project.user, project.title)"
-        >
+        <button @click="playCombinedAudio(project._id, project)">
           <img
             src="../assets/Play.svg"
-            v-if="!isProjectPlaying(project.title, project.user)"
+            v-if="!isProjectPlaying(project._id)"
+            style="border: 1px solid red"
           />
-          <img src="../assets/Pause.svg" v-else />
+          <img
+            src="../assets/Pause.svg"
+            v-else
+            style="border: 1px solid green"
+          />
         </button>
       </div>
     </ul>
