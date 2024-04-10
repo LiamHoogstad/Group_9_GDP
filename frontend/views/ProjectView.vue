@@ -723,11 +723,6 @@ export default {
     <div id="ribbon">
       <div class="left">
         <div class="dropdowns">
-          <span>file</span>
-          <span>edit</span>
-          <span>insert</span>
-          <span>share</span>
-          <span>help</span>
         </div>
         <input
           type="text"
