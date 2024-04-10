@@ -721,6 +721,14 @@ export default {
 
 <template>
   <div class="projectPage">
+    <div class="likeDislike">
+          <button @click="vote('True')" class="like">
+            <img src="../assets/Like.svg" /> {{ upvotes }}
+          </button>
+          <button @click="vote('False')" class="dislike">
+            <img src="../assets/Dislike.svg" /> {{ downvotes }}
+          </button>
+        </div>
     <button
       class="comments-button"
       @click="
@@ -818,14 +826,6 @@ export default {
 
           <audio id="projectAudio" controls style="display: none"></audio>
         </div>
-      </div>
-      <div class="likeDislike">
-        <button @click="vote('True')" class="like">
-          <img src="../assets/Like.svg" /> {{ upvotes }}
-        </button>
-        <button @click="vote('False')" class="dislike">
-          <img src="../assets/Dislike.svg" /> {{ downvotes }}
-        </button>
       </div>
       <div class="right"></div>
     </div>
@@ -1226,8 +1226,7 @@ input#project_name {
   font-family: "Delta Gothic One";
   width: 97%;
   font-size: 20pt;
-  margin: 0.15em 0 0.4em 0.5em;
-  padding-bottom: 0.25em;
+  margin: 0.55em 0 0 0.5em;
   height: 1.1em;
   background-color: transparent;
   color: var(--colour-text);
@@ -1246,7 +1245,7 @@ input#project_name:focus {
   flex-direction: column;
   justify-content: center;
   width: 15vw;
-  margin: 0 auto 0 auto;
+  margin: 0 auto 0.5em auto;
 }
 
 button {
@@ -1437,16 +1436,21 @@ button#hamburger img {
   width: 3em;
 }
 
-.track .likeDislike button.like {
+.likeDislike {
+  position: fixed;
+  bottom: 0;
+  margin: 1em;
+}
+.likeDislike button.like {
   margin-right: 0.5em;
 }
 
-.track .likeDislike button img {
+.likeDislike button img {
   height: 1em;
   color: var(--colour-background);
 }
 
-.track .likeDislike button.dislike img {
+.likeDislike button.dislike img {
   position: relative;
   top: 0.2em;
 }
