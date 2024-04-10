@@ -17,6 +17,11 @@ export default {
       type: Array,
     }
   },
+  watch: {
+    alreadySelectedOptions() {
+      this.selectedOptions = this.alreadySelectedOptions ? this.alreadySelectedOptions : [];
+    }
+  },
   data() {
     return {
       isDropdownOpen: false,
