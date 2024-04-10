@@ -324,23 +324,17 @@ export default {
           <h3>{{ project.title }}</h3>
           <p>{{ project.description }}</p>
           <div class="tags">
-            <p
-              v-if="Array.isArray(project.genres) && project.genres.length > 0"
-              class="genre"
+            <p v-if="Array.isArray(project.genres) && project.genres.length > 0"
+               v-for="genre in project.genres" class="genre"
             >
-              Genres: {{ project.genres.join(", ") }}
+              {{ genre }}
             </p>
-            <p
-              v-if="
-                Array.isArray(project.instruments) &&
-                project.instruments.length > 0
-              "
-              class="genre"
+            <p v-if="Array.isArray(project.instruments) && project.instruments.length > 0"
+               v-for="instrument in project.instruments" class="genre"
             >
-              Instruments: {{ project.instruments.join(", ") }}
+              {{ instrument }}
             </p>
           </div>
-          <button @click.stop="deleteProject(project)">Delete</button>
         </div>
         <div class="project addProject" @click="showAddProjectPopup = true">
           <img src="../assets/New Project.svg"/>
@@ -493,7 +487,7 @@ button.profile-picture .hover i {
   justify-content: center;
   flex-flow: row wrap;
   gap: 0.25em;
-  margin: 0 0.25em 0.25em 0.25em;
+  margin: 0.5em 0.25em 0.25em 0.25em;
 }
 .project .tags p {
   padding: 0 0.25em 0 0.25em;
