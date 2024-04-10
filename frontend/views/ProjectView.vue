@@ -819,6 +819,9 @@ export default {
                         "
                         :min="0"
                         :max="100"
+                        :style="{
+                          pointerEvents: isLoadingAudio ? 'none' : 'auto',
+                        }"
                       />
                       <button
                         title="Solo Track"
@@ -829,6 +832,7 @@ export default {
                           color: audio.Solo
                             ? 'var(--colour-background)'
                             : 'var(--colour-interactable)',
+                          pointerEvents: isLoadingAudio ? 'none' : 'auto',
                         }"
                         @click="updateTrackSolo(audio, index)"
                       >
@@ -843,6 +847,7 @@ export default {
                           color: audio.Mute
                             ? 'var(--colour-background)'
                             : 'var(--colour-interactable)',
+                          pointerEvents: isLoadingAudio ? 'none' : 'auto',
                         }"
                         @click="updateTrackMute(audio, index)"
                       >
