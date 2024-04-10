@@ -68,39 +68,43 @@ export default {
       }
     };
     const playCombinedAudio = async (projectId, project) => {
-      console.log(projectId);
       let combinedAudioId = project.combinedAudioId;
+      console.log(combinedAudioId);
+      // Check if we're trying to play the current project
       if (currentProject.value === projectId) {
+        // If the current project is already playing, pause it; otherwise, play it
         if (isPlaying.value) {
           audio.pause();
+          isPlaying.value = false;
         } else {
           audio.play();
-        }
-        isPlaying.value = !isPlaying.value;
-      } else {
-        audio.pause();
-        isPlaying.value = false;
-        currentProject.value = null;
-        try {
-          const response = await axios.get(
-            `http://127.0.0.1:5000/streamAudio/${projectId}`,
-            {
-              responseType: "blob",
-            }
-          );
-          audioSrc.value = URL.createObjectURL(response.data);
-          audio.src = audioSrc.value;
-          audio.play();
           isPlaying.value = true;
+        }
+      } else {
+        // If a different project is selected, change the audio source
+        try {
+          // Update the current project and playing state
           currentProject.value = projectId;
+          isPlaying.value = true;
           errorFile.value = null;
+
+          // Set the new audio source
+          audio.src = `http://127.0.0.1:5000/streamAudio/${combinedAudioId}`;
+
+          // Attempt to play the new audio
+          await audio.play();
         } catch (error) {
-          errorFile.value = projectId;
+          // Handle errors (e.g., file not found, network error)
           console.error("Error fetching audio file:", error);
           alert("There is no preview available for this project");
+          // Update the error state
+          errorFile.value = projectId;
+          // Reset the playing state
+          isPlaying.value = false;
         }
       }
     };
+
     const isProjectPlaying = (projectId) => {
       return currentProject.value === projectId && isPlaying.value;
     };
