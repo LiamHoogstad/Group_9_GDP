@@ -320,29 +320,26 @@ export default {
           <button class="delete" @click.stop="deleteProject(project)">x</button>
           <h3>{{ project.title }}</h3>
           <p>{{ project.description }}</p>
-          <div class="tags">
-            <div
-              v-if="
-                (Array.isArray(project.genres) && project.genres.length > 0) ||
-                (Array.isArray(project.instruments) &&
-                  project.instruments.length > 0)
-              "
+          <div class="tags" v-if="
+              (Array.isArray(project.genres) && project.genres.length > 0) ||
+              (Array.isArray(project.instruments) &&
+                project.instruments.length > 0)
+            "
+          >
+            <p
+              v-for="(genre, index) in project.genres"
+              :key="'genre-' + index"
+              class="genre"
             >
-              <p
-                v-for="(genre, index) in project.genres"
-                :key="'genre-' + index"
-                class="genre"
-              >
-                {{ genre }}
-              </p>
-              <p
-                v-for="(instrument, index) in project.instruments"
-                :key="'instrument-' + index"
-                class="genre"
-              >
-                {{ instrument }}
-              </p>
-            </div>
+              {{ genre }}
+            </p>
+            <p
+              v-for="(instrument, index) in project.instruments"
+              :key="'instrument-' + index"
+              class="genre"
+            >
+              {{ instrument }}
+            </p>
           </div>
         </div>
         <div class="project addProject" @click="showAddProjectPopup = true">
