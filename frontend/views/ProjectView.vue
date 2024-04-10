@@ -24,6 +24,8 @@ const trackVolumes = [20, 40, 60, 100];
 const trackStartPositions = [0, 0, 0, 0];
 const newCommentText = ref("");
 let isOwnProfile = ref(true);
+const upvotes = ref(0);
+const downvotes = ref(0);
 
 watch(
   audioFiles,
@@ -37,6 +39,45 @@ watch(
   },
   { deep: true }
 );
+
+const getVotes = async () => {
+  const accessToken = localStorage.getItem("userToken");
+  const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+  
+  let projectDetailsString = localStorage.getItem("projectDetails");
+  let projectDetails = JSON.parse(projectDetailsString);
+  const response = await axios.get(
+    `http://127.0.0.1:5000/getVotes/${projectDetails._id}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  let data = response.data;
+  upvotes.value = data.upvotes;
+  downvotes.value = data.downvotes;
+}
+
+const vote = async (like) => {
+  const accessToken = localStorage.getItem("userToken");
+  const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+
+  let projectDetailsString = localStorage.getItem("projectDetails");
+  let projectDetails = JSON.parse(projectDetailsString);
+  let projectId = projectDetails._id;
+  if (accessToken) {
+    try {
+      // console.log(username, title);
+      await axios.post(
+        `http://127.0.0.1:5000/upvoteProject/${userId}/${projectId}/${like}`,
+        {},
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }
+      );   
+    } catch (error) {
+      console.error("Error voting on project:", error);
+    }
+  }
+  getVotes();
+}
 
 const fetchComments = async () => {
   const accessToken = localStorage.getItem("userToken");
@@ -304,7 +345,12 @@ async function fetchAudioFiles() {
 onMounted(async () => {
   await fetchAudioFiles();
   await fetchComments();
+  await getVotes();
 });
+
+onMounted(() => {
+  getVotes();
+  });
 
 function updateVolume(newVolume) {
   const volumeValue = newVolume / 100;
@@ -711,6 +757,20 @@ export default {
 
           <audio id="projectAudio" controls style="display: none"></audio>
         </div>
+      </div>
+      <div class="likeDislike">
+        <button
+          @click="vote('True')"
+          class="like"
+        >
+          <img src="../assets/Like.svg" /> {{ upvotes }}
+        </button>
+        <button
+          @click="vote('False')"
+          class="dislike"
+        >
+          <img src="../assets/Dislike.svg" /> {{ downvotes }}
+        </button>
       </div>
       <div class="right">
         <HamburgerMenu />
@@ -1317,5 +1377,27 @@ button#hamburger img {
   border-radius: 10px;
   margin-top: 3vh;
   z-index: -5001;
+}
+
+.track .likeDislike button {
+  color: var(--colour-background);
+  background-color: var(--colour-interactable);
+  padding: 0.3em 0 0.3em 0;
+  border-radius: 0.25em;
+  width: 3em;
+}
+
+.track .likeDislike button.like {
+  margin-right: 0.5em;
+}
+
+.track .likeDislike button img {
+  height: 1em;
+  color: var(--colour-background);
+}
+
+.track .likeDislike button.dislike img {
+  position: relative;
+  top: 0.2em;
 }
 </style>
