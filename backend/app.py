@@ -42,7 +42,7 @@ try:
 except Exception as e:
     print(e)
 
-db = client.MusiCollab
+db = client.MusiCollabDB
 users_collection = db.users 
 grid_fs_bucket = GridFSBucket(db)
 

@@ -519,20 +519,49 @@ button.profile-picture .hover i {
 }
 .popupContent {
   text-align: center;
-  background-color: var(--colour-panel-soft);
+  color: var(--colour-background);
+  background-color: var(--colour-interactable);
   display: flex;
   border-radius: 10px;
   flex-direction: column;
 }
+.popupContent h3 {
+  font-family: "Delta Gothic One";
+}
+.popupContent .multiple-dropdown {
+  background-color: var(--colour-background);
+  width: fit-content;
+  justify-self: center;
+  border-radius: 0.5em;
+  margin-top: 0.25em;
+  align-self: center;
+}
+.popupContent textarea,
+.popupContent input {
+  color: var(--colour-text);
+  background-color: var(--colour-background);
+  padding-left: 0.25em;
+  margin: 0 0.25em 0 0.25em;
+}
+
 .buttonContainer {
   margin-top: auto;
   display: flex;
   justify-content: space-between;
   border: 3px var(--colour-panel-hard);
   padding: 0 10px;
+  transition: all 200ms;
+}
+.buttonContainer button {
+  margin: 0.25em 0 0.25em 0;
+  padding: 0 0.25em 0 0.25em;
+  background-color: transparent;
+  border-radius: 0em;
 }
 .buttonContainer button:hover {
-  background-color: var(--colour-interactable-hover);
+  color: var(--colour-background);
+  background-color: var(--colour-text);
+  border-radius: 0.25em;
 }
 
 select[multiple] option:checked {
