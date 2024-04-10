@@ -878,11 +878,11 @@ def delete_project(project_id):
 @app.route('/upvoteProject/<current_user_id>/<username>/<project_id>/<like>', methods=['POST'])
 def upvote_project(current_user_id, username, project_id, like):
     like = like == 'True'
-    project_id = int(project_id)
+    project_id = ObjectId(project_id)
     try:
         project_user = users_collection.find_one({'username': username})
         if project_user:
-            project = next((project for project in project_user.get('projects', []) if int(project['id']) == int(project_id)), None)
+            project = next((project for project in project_user.get('projects', []) if project['_id'] == project_id), None)
             if project:
                 upvote_data = project.get('projectUpvote', [])
                 user_upvote = next((data for data in upvote_data if data['user'] == current_user_id), None)
@@ -892,7 +892,7 @@ def upvote_project(current_user_id, username, project_id, like):
                         user_upvote['like'] = like
                         user_upvote['date'] = datetime.now()
                         # update in database
-                        users_collection.update_one({ 'username': username, 'projects': { '$elemMatch': { 'id': project_id, 'projectUpvote.user': current_user_id }}},
+                        users_collection.update_one({ 'username': username, 'projects': { '$elemMatch': { '_id': project_id, 'projectUpvote.user': current_user_id }}},
                             { '$set': { 'projects.$.projectUpvote.$[elem]': user_upvote } },
                             array_filters=[{'elem.user': current_user_id}]
                         )
@@ -900,7 +900,7 @@ def upvote_project(current_user_id, username, project_id, like):
                     # need to delete the vote
                     else:
                         users_collection.update_one(
-                            {'username': username, 'projects.id': project_id},
+                            {'username': username, 'projects._id': project_id},
                             { "$pull": { "projects.$.projectUpvote": { "user": current_user_id } } }
                         )
                         return jsonify({"success": True, "message": "Vote successfully deleted"})
@@ -912,7 +912,7 @@ def upvote_project(current_user_id, username, project_id, like):
                         'like': like
                     }
                     users_collection.update_one(
-                        {'_id': ObjectId(project_user_id), 'projects.id': project_id},
+                        {'_id': ObjectId(project_user_id), 'projects._id': project_id},
                         {'$push': {'projects.$.projectUpvote': data}}
                     )
                     return jsonify({"success": True, "message": "Vote added successfully"})

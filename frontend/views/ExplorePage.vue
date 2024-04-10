@@ -478,7 +478,7 @@ export default {
           </button>
           <div class="likeDislike">
             <button
-              @click="vote(project.user, project.id, 'True')"
+              @click="vote(project.user, project._id, 'True')"
               class="like"
             >
               <img src="../assets/Like.svg" /> {{ project.upvote_count }}
