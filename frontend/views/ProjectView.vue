@@ -1025,9 +1025,7 @@ export default {
 #app {
   overflow: hidden !important;
 }
-.projectPage {
-  /* min-height: 100vh; */
-}
+
 .upload-area {
   margin-top: 6em;
 }
