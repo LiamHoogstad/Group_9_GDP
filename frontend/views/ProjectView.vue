@@ -308,7 +308,6 @@ async function fetchAudioFiles() {
   } else {
     projectId = projectDetails._id; // If _id is a string
   }
-
   try {
     const response = await axios.get(
       `http://127.0.0.1:5000/getProjectDetails/${projectId}/${userId}`,
@@ -330,7 +329,6 @@ async function fetchAudioFiles() {
     trackStartPositions.value = audioFiles.value.map(
       (file) => file.Start_Position
     );
-
     isOwnProfile = response.data.isOwnProfile;
     console.log("Is this the user's own project?:", isOwnProfile);
   } catch (error) {
@@ -663,6 +661,19 @@ const sendProjectTitleUpdate = async () => {
     );
   }
 };
+const clickProject = async (projectDetails) => {
+  try {
+    console.log("This is what project should be\n" + projectDetails);
+    localStorage.setItem("projectDetails", JSON.stringify(projectDetails));
+    setTimeout(() => {
+      router.push("/profile-page");
+    }, 1000);
+
+    console.log("Project opened successfully");
+  } catch (error) {
+    console.error("Error opening project:", error);
+  }
+};
 
 const contributeToProject = async () => {
   const accessToken = localStorage.getItem("userToken");
@@ -679,9 +690,8 @@ const contributeToProject = async () => {
   } else {
     projectId = projectDetails._id; // If _id is a string
   }
+
   try {
-    const accessToken = localStorage.getItem("userToken");
-    // Make the post request and wait for the response
     const response = await axios.post(
       `http://127.0.0.1:5000/contributeToProject`,
       {
@@ -693,16 +703,15 @@ const contributeToProject = async () => {
       }
     );
 
-    // If the response is successful, execute the following
     alert("Project copied successfully!");
     console.log("about to parse");
-    const newProject = JSON.parse(response.data.newProject);
-    consol.log("about to print");
+    console.log(JSON.stringify(response.data.newProject, null, 2)); // Ensure accessing data correctly
+    const newProject = JSON.parse(response.data.newProject); // Only needed if newProject is a string
+    console.log("about to print");
     console.log("New Project:", newProject);
     console.log("about to redirect");
-    clickProject(newProject); // Use the new project's _id to handle the project
+    clickProject(newProject); // Ensure clickProject can handle the newProject format
   } catch (error) {
-    // If there is an error, log it and show an alert
     console.error("Error contributing to project:", error);
     alert(error.response?.data.message || "An error occurred");
   }
