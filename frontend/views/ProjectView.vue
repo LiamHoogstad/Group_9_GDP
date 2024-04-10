@@ -872,14 +872,14 @@ export default {
             :options="genres"
             valueName="Genres"
             allowUpdates= "True"
-            :alreadySelectedOptions="selectedGenres"
+            :alreadySelectedOptions="selectedGenres.value"
             @update:selectedOptions="handleSelectedGenresUpdate"
           />
           <MultipleDropdown
             :options="instruments"
             valueName="Instruments"
             allowUpdates= "True"
-            :alreadySelectedOptions="selectedInstruments"
+            :alreadySelectedOptions="selectedInstruments.value"
             @update:selectedOptions="handleSelectedInstrumentsUpdate"
           />
         </div>
@@ -1326,7 +1326,6 @@ input#project_name {
   background-color: transparent;
   color: var(--colour-text);
   border-radius: 0.25em;
-  overflow: hidden;
 }
 
 input#project_name:focus {
