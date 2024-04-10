@@ -417,7 +417,7 @@ export default {
                       :key="'genre-' + project._id + '-' + index"
                       class="genre"
                     >
-                      sdfsadf{{ genre }}
+                      {{ genre }}
                     </p>
                     <p
                       v-for="(instrument, index) in project.instruments"
