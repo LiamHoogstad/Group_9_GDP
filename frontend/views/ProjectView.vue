@@ -55,11 +55,16 @@ const handleSelectedInstrumentsUpdate = async (updatedSelectedOptions) => {
       // console.log(username, title);
       await axios.put(
         `http://127.0.0.1:5000/updateInstruments/${projectId}`,
-        {'instruments': updatedSelectedOptions.length > 0 ? updatedSelectedOptions.join(",") : " "},
+        {
+          instruments:
+            updatedSelectedOptions.length > 0
+              ? updatedSelectedOptions.join(",")
+              : " ",
+        },
         {
           headers: { Authorization: `Bearer ${accessToken}` },
         }
-      );   
+      );
     } catch (error) {
       console.error("Error voting on project:", error);
     }
@@ -78,11 +83,16 @@ const handleSelectedGenresUpdate = async (updatedSelectedOptions) => {
       // console.log(username, title);
       await axios.put(
         `http://127.0.0.1:5000/updateGenres/${projectId}`,
-        {'genres': updatedSelectedOptions.length > 0 ? updatedSelectedOptions.join(",") : " "},
+        {
+          genres:
+            updatedSelectedOptions.length > 0
+              ? updatedSelectedOptions.join(",")
+              : " ",
+        },
         {
           headers: { Authorization: `Bearer ${accessToken}` },
         }
-      );   
+      );
     } catch (error) {
       console.error("Error updating genre on project:", error);
     }
@@ -93,7 +103,7 @@ const handleSelectedGenresUpdate = async (updatedSelectedOptions) => {
 const getGenresAndInstruments = async () => {
   const accessToken = localStorage.getItem("userToken");
   const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
-  
+
   let projectDetailsString = localStorage.getItem("projectDetails");
   let projectDetails = JSON.parse(projectDetailsString);
   const response = await axios.get(
@@ -103,7 +113,7 @@ const getGenresAndInstruments = async () => {
   let data = response.data;
   selectedGenres.value = data.genres;
   selectedInstruments.value = data.instruments;
-}
+};
 
 const getVotes = async () => {
   const accessToken = localStorage.getItem("userToken");
@@ -796,13 +806,13 @@ export default {
 <template>
   <div class="projectPage">
     <div class="likeDislike">
-          <button @click="vote('True')" class="like">
-            <img src="../assets/Like.svg" /> {{ upvotes }}
-          </button>
-          <button @click="vote('False')" class="dislike">
-            <img src="../assets/Dislike.svg" /> {{ downvotes }}
-          </button>
-        </div>
+      <button @click="vote('True')" class="like">
+        <img src="../assets/Like.svg" /> {{ upvotes }}
+      </button>
+      <button @click="vote('False')" class="dislike">
+        <img src="../assets/Dislike.svg" /> {{ downvotes }}
+      </button>
+    </div>
     <button
       class="comments-button"
       @click="
@@ -874,28 +884,34 @@ export default {
     </div>
     <div id="ribbon">
       <div class="left">
-        <div class="dropdowns"
-          v-if="isOwnProfile"
-        >
+        <div class="dropdowns" v-if="isOwnProfile">
           <MultipleDropdown
             :options="genres"
             valueName="Genres"
-            allowUpdates= "True"
+            allowUpdates="True"
             :alreadySelectedOptions="selectedGenres"
             @update:selectedOptions="handleSelectedGenresUpdate"
           />
           <MultipleDropdown
             :options="instruments"
             valueName="Instruments"
-            allowUpdates= "True"
+            allowUpdates="True"
             :alreadySelectedOptions="selectedInstruments"
             @update:selectedOptions="handleSelectedInstrumentsUpdate"
           />
         </div>
         <div v-else class="tags">
-          <p v-for="genre in selectedGenres">{{ genre }}</p>
-          <p v-for="instrument in selectedInstruments">{{ instrument }}</p>
+          <p v-for="(genre, index) in selectedGenres" :key="'genre-' + index">
+            {{ genre }}
+          </p>
+          <p
+            v-for="(instrument, index) in selectedInstruments"
+            :key="'instrument-' + index"
+          >
+            {{ instrument }}
+          </p>
         </div>
+
         <input
           type="text"
           id="project_name"
