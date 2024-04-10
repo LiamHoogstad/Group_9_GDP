@@ -871,16 +871,16 @@ export default {
           <MultipleDropdown
             :options="genres"
             valueName="Genres"
-            :allowUpdates="isOwnProfile ? 'True' : 'False'"
+            allowUpdates= "True"
             :alreadySelectedOptions="selectedGenres"
-            @update:selectedOptions="isOwnProfile ? handleSelectedGenresUpdate : ''"
+            @update:selectedOptions="handleSelectedGenresUpdate"
           />
           <MultipleDropdown
             :options="instruments"
             valueName="Instruments"
-            :allowUpdates="isOwnProfile ? 'True' : 'False'"
+            allowUpdates= "True"
             :alreadySelectedOptions="selectedInstruments"
-            @update:selectedOptions="isOwnProfile ? handleSelectedGenresUpdate : ''"
+            @update:selectedOptions="handleSelectedInstrumentsUpdate"
           />
         </div>
         <div v-else class="tags">
