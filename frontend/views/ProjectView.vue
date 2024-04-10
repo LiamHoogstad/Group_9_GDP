@@ -843,14 +843,14 @@ export default {
         <MultipleDropdown
           :options="genres"
           valueName="Genres"
-          :allowUpdates="True"
+          allowUpdates="True"
           :alreadySelectedOptions="selectedGenres"
           @update:selectedOptions="handleSelectedGenresUpdate"
         />
         <MultipleDropdown
           :options="instruments"
           valueName="Instruments"
-          :allowUpdates="True"
+          allowUpdates="True"
           :alreadySelectedOptions="selectedInstruments"
           @update:selectedOptions="handleSelectedInstrumentsUpdate"
         />
@@ -858,13 +858,13 @@ export default {
       <div v-if="!isOwnProfile" class="centre">
         <MultipleDropdown
           :options="genres"
-          :allowUpdates="False"
+          allowUpdates="False"
           valueName="Genres"
           :alreadySelectedOptions="selectedGenres"
         />
         <MultipleDropdown
           :options="instruments"
-          :allowUpdates="False"
+          allowUpdates="False"
           valueName="Instruments"
           :alreadySelectedOptions="selectedInstruments"
         />

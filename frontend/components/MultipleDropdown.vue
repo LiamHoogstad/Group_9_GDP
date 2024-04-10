@@ -10,7 +10,7 @@ export default {
       required: true,
     },
     allowUpdates: {
-      type: Boolean,
+      type: String,
       required: true,
     },
     alreadySelectedOptions: {
@@ -49,7 +49,7 @@ export default {
     },
     
     toggleOption(optionValue) {
-      if (this.isDropdownOpen && this.allowUpdates) {
+      if (this.isDropdownOpen && this.allowUpdates == "True") {
         if (this.selectedOptions.includes(optionValue)) {
           this.selectedOptions = this.selectedOptions.filter(option => option !== optionValue);
         } else {
@@ -66,7 +66,7 @@ export default {
       }
       this.$emit('update:selectedOptions', this.selectedOptions);
     }
-  }
+  },
 };
 </script>
 
