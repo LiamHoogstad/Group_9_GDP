@@ -865,7 +865,9 @@ export default {
     </div>
     <div id="ribbon">
       <div class="left">
-        <div class="dropdowns">
+        <div class="dropdowns"
+          v-if="isOwnProfile"
+        >
           <MultipleDropdown
             :options="genres"
             valueName="Genres"
@@ -880,6 +882,10 @@ export default {
             :alreadySelectedOptions="selectedInstruments"
             @update:selectedOptions="isOwnProfile ? handleSelectedGenresUpdate : ''"
           />
+        </div>
+        <div v-else class="tags">
+          <p v-for="genre in selectedGenres">{{ genre }}</p>
+          <p v-for="instrument in selectedInstruments">{{ instrument }}</p>
         </div>
         <input
           type="text"
@@ -1296,6 +1302,19 @@ tr .trackPreview .editor {
 #ribbon .dropdowns * {
   margin-right: 0.5em;
   display: flex;
+}
+
+#ribbon .tags {
+  margin-left: 0.5em;
+  display: flex;
+}
+#ribbon .tags * {
+  margin-right: 0.5em;
+  font-weight: 600;
+  color: var(--colour-background);
+  background-color: var(--colour-interactable);
+  padding: 0 0.25em 0 0.25em;
+  border-radius: 0.5em;
 }
 
 input#project_name {
