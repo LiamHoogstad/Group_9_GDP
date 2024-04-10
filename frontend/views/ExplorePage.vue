@@ -2,7 +2,7 @@
 import { ref, computed, onMounted } from "vue";
 import axios from "axios";
 import { useRouter } from "vue-router";
-import { genres, instruments } from '../assets/globalVariables.js';
+import { genres, instruments } from "../assets/globalVariables.js";
 import MultipleDropdown from "../components/MultipleDropdown.vue";
 import HamburgerMenu from "../components/HamburgerMenu.vue";
 
@@ -26,35 +26,51 @@ export default {
     const router = useRouter(); // Moved inside setup()
     const projects = ref([]);
     const sortedProjects = ref([]);
-    const currentSort = ref('default');
+    const currentSort = ref("default");
     const searchQuery = ref("");
     const currentFilter = ref("none");
     const selectedInstruments = ref([]);
     const selectedGenres = ref([]);
     const selectedFilters = ref([]);
-    const contributeToProject = async (projectUser, projectId) => {
+
+    const contributeToProject = async (projectId) => {
       const accessToken = localStorage.getItem("userToken");
       const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+      // let projectDetailsString = localStorage.getItem("projectDetails");
+      // let projectDetails = JSON.parse(projectDetailsString);
+      console.log("contribute function\n" + JSON.stringify(projectId));
+      projectId = projectId._id;
+      console.log(projectId);
+
       try {
         const response = await axios.post(
           `http://127.0.0.1:5000/contributeToProject`,
           {
             projectId: projectId,
-            projectCreator: projectUser,
             userId: userId,
+          },
+          {
+            headers: { Authorization: `Bearer ${accessToken}` },
           }
         );
+
         alert("Project copied successfully!");
-        const newProjectTitle = response.data.newProjectTitle;
-        console.log("NEW PROJECT TITLE" + newProjectTitle);
-        await clickProject(newProjectTitle); // assuming the ProjectView route expects an id parameter
+        console.log("about to parse");
+        console.log(JSON.stringify(response.data.newProject, null, 2)); // Ensure accessing data correctly
+        const newProject = JSON.parse(response.data.newProject); // Only needed if newProject is a string
+        console.log("about to print");
+        console.log("New Project:", newProject);
+        console.log("about to redirect");
+        clickProject(newProject); // Ensure clickProject can handle the newProject format
       } catch (error) {
         console.error("Error contributing to project:", error);
         alert(error.response?.data.message || "An error occurred");
       }
     };
-    const playCombinedAudio = async (username, title) => {
-      if (currentProject.value === title && currentProjectUser.value===username) {
+    const playCombinedAudio = async (projectId, project) => {
+      console.log(projectId);
+      let combinedAudioId = project.combinedAudioId;
+      if (currentProject.value === projectId) {
         if (isPlaying.value) {
           audio.pause();
         } else {
@@ -65,10 +81,9 @@ export default {
         audio.pause();
         isPlaying.value = false;
         currentProject.value = null;
-        currentProjectUser.value = null;
         try {
           const response = await axios.get(
-            `http://127.0.0.1:5000/explorePageAudio/${username}/${title}`,
+            `http://127.0.0.1:5000/streamAudio/${projectId}`,
             {
               responseType: "blob",
             }
@@ -77,17 +92,17 @@ export default {
           audio.src = audioSrc.value;
           audio.play();
           isPlaying.value = true;
-          currentProject.value = title;
-          currentProjectUser.value = username;
+          currentProject.value = projectId;
           errorFile.value = null;
         } catch (error) {
-          errorFile.value = title;
+          errorFile.value = projectId;
           console.error("Error fetching audio file:", error);
+          alert("There is no preview available for this project");
         }
       }
     };
-    const isProjectPlaying = (project, user) => {
-      return currentProjectUser.value===user && currentProject.value === project && isPlaying.value;
+    const isProjectPlaying = (projectId) => {
+      return currentProject.value === projectId && isPlaying.value;
     };
 
     const fetchAllProjects = async () => {
@@ -99,12 +114,12 @@ export default {
         );
         projects.value = response.data;
         // add in the upvote/downvote counts
-        projects.value.forEach(project => {
+        projects.value.forEach((project) => {
           let likes = 0;
           let dislikes = 0;
-          let user_liked = "none"
+          let user_liked = "none";
           if (project.hasOwnProperty("projectUpvote")) {
-            project.projectUpvote.forEach(upvote => {
+            project.projectUpvote.forEach((upvote) => {
               if (upvote.like) {
                 likes += 1;
               } else {
@@ -133,20 +148,26 @@ export default {
         try {
           // console.log(username, title);
           await axios.post(
-            `http://127.0.0.1:5000/upvoteProject/${userId}/${username}/${project_id}/${like}`, {},
+            `http://127.0.0.1:5000/upvoteProject/${userId}/${username}/${project_id}/${like}`,
+            {},
             {
               headers: { Authorization: `Bearer ${accessToken}` },
-          });
+            }
+          );
           let updated = false;
-          projects.value.forEach(project => {
-            if (!updated && project.user === username && project.id === project_id) {
-              if (like === 'True') {
+          projects.value.forEach((project) => {
+            if (
+              !updated &&
+              project.user === username &&
+              project.id === project_id
+            ) {
+              if (like === "True") {
                 if (project.user_liked !== "true") {
                   if (project.user_liked === "false") {
                     project.downvote_count -= 1;
                   }
                   project.upvote_count += 1;
-                  project.user_liked = "true"
+                  project.user_liked = "true";
                 } else {
                   project.upvote_count -= 1;
                   project.user_liked = "none";
@@ -157,10 +178,10 @@ export default {
                     project.upvote_count -= 1;
                   }
                   project.downvote_count += 1;
-                  project.user_liked = "false"
+                  project.user_liked = "false";
                 } else {
                   project.downvote_count -= 1;
-                  project.user_liked = "none"
+                  project.user_liked = "none";
                 }
               }
               updated = true;
@@ -175,7 +196,7 @@ export default {
 
     const setSort = async (sortBy) => {
       currentSort.value = sortBy;
-    }
+    };
 
     onMounted(() => {
       fetchAllProjects();
@@ -183,7 +204,7 @@ export default {
 
     const filteredProjects = computed(() => {
       // start with reseting the order if in default
-      if (currentSort.value === 'default') {
+      if (currentSort.value === "default") {
         sortedProjects.value = [...projects.value];
       }
 
@@ -191,41 +212,72 @@ export default {
       if (selectedFilters.value.length === 0) {
         sortedProjects.value = sortedProjects.value = [...projects.value];
       } else {
-        if (selectedFilters.value.includes('hasDescription')) {
-          sortedProjects.value = sortedProjects.value.filter(a => a.description !== '');
-        } if (selectedFilters.value.includes('hasTitle')) {
-          sortedProjects.value = sortedProjects.value.filter(a => a.title !== '');
-        } if (selectedFilters.value.includes('hasGenres')) {
-          sortedProjects.value = sortedProjects.value.filter(a => a.genres && a.genres.length > 0);
-        } if (selectedFilters.value.includes('hasInstruments')) {
-          sortedProjects.value = sortedProjects.value.filter(a => a.instruments && a.instruments.length > 0);
+        if (selectedFilters.value.includes("hasDescription")) {
+          sortedProjects.value = sortedProjects.value.filter(
+            (a) => a.description !== ""
+          );
+        }
+        if (selectedFilters.value.includes("hasTitle")) {
+          sortedProjects.value = sortedProjects.value.filter(
+            (a) => a.title !== ""
+          );
+        }
+        if (selectedFilters.value.includes("hasGenres")) {
+          sortedProjects.value = sortedProjects.value.filter(
+            (a) => a.genres && a.genres.length > 0
+          );
+        }
+        if (selectedFilters.value.includes("hasInstruments")) {
+          sortedProjects.value = sortedProjects.value.filter(
+            (a) => a.instruments && a.instruments.length > 0
+          );
         }
       }
 
-      sortedProjects.value = sortedProjects.value.filter(project => project.title.toLowerCase().includes(searchQuery.value.toLowerCase()));
+      sortedProjects.value = sortedProjects.value.filter((project) =>
+        project.title.toLowerCase().includes(searchQuery.value.toLowerCase())
+      );
 
       // next filter by the specific genre
       if (selectedGenres.value.length > 0) {
-        sortedProjects.value = sortedProjects.value.filter(project => project.genres?.some(genre => selectedGenres.value.includes(genre)));
+        sortedProjects.value = sortedProjects.value.filter((project) =>
+          project.genres?.some((genre) => selectedGenres.value.includes(genre))
+        );
       }
 
       // next filter by the specific instrument
       if (selectedInstruments.value.length > 0) {
-        sortedProjects.value = sortedProjects.value.filter(project => project.instruments?.some(instrument => selectedInstruments.value.includes(instrument)));
+        sortedProjects.value = sortedProjects.value.filter((project) =>
+          project.instruments?.some((instrument) =>
+            selectedInstruments.value.includes(instrument)
+          )
+        );
       }
 
       // then do the sorting
-      if (currentSort.value === 'mostLiked') {
+      if (currentSort.value === "mostLiked") {
         sortedProjects.value.sort((a, b) => b.upvote_count - a.upvote_count);
-      } else if (currentSort.value === 'leastLiked') {
+      } else if (currentSort.value === "leastLiked") {
         sortedProjects.value.sort((a, b) => a.upvote_count - b.upvote_count);
-      } else if (currentSort.value === 'mostPopular') {
-        sortedProjects.value.sort((a, b) => b.upvote_count - b.downvote_count - a.upvote_count + a.downvote_count); 
-      } else if (currentSort.value === 'leastPopular') {
-        sortedProjects.value.sort((a, b) => a.upvote_count - a.downvote_count - b.upvote_count + b.downvote_count); 
-      } else if (currentSort.value === 'title') {
+      } else if (currentSort.value === "mostPopular") {
+        sortedProjects.value.sort(
+          (a, b) =>
+            b.upvote_count -
+            b.downvote_count -
+            a.upvote_count +
+            a.downvote_count
+        );
+      } else if (currentSort.value === "leastPopular") {
+        sortedProjects.value.sort(
+          (a, b) =>
+            a.upvote_count -
+            a.downvote_count -
+            b.upvote_count +
+            b.downvote_count
+        );
+      } else if (currentSort.value === "title") {
         sortedProjects.value.sort((a, b) => a.title.localeCompare(b.title));
-      } else if (currentSort.value === 'user') {
+      } else if (currentSort.value === "user") {
         sortedProjects.value.sort((a, b) => a.user.localeCompare(b.user));
       }
 
@@ -233,25 +285,28 @@ export default {
     });
 
     const handleSelectedInstrumentsUpdate = async (updatedSelectedOptions) => {
-          selectedInstruments.value = updatedSelectedOptions;
-      }
+      selectedInstruments.value = updatedSelectedOptions;
+    };
 
     const handleSelectedGenresUpdate = async (updatedSelectedOptions) => {
-        selectedGenres.value = updatedSelectedOptions;
-    }
+      selectedGenres.value = updatedSelectedOptions;
+    };
 
     const handleSelectedFiltersUpdate = async (updatedSelectedOptions) => {
-        selectedFilters.value = updatedSelectedOptions;
-    }
+      selectedFilters.value = updatedSelectedOptions;
+    };
 
-    const clickProject = async (newProjectTitle) => {
+    const clickProject = async (projectDetails) => {
       try {
-        console.log("trying to run");
-        // Make sure this matches the route definition in your router setup
-        router.push({
-          name: "ProjectView",
-          params: { title: newProjectTitle },
-        });
+        console.log("This is what project should be\n" + projectDetails);
+        localStorage.setItem("projectDetails", JSON.stringify(projectDetails));
+        setTimeout(() => {
+          router.push({
+            name: "ProjectView",
+            params: { title: projectDetails.title },
+          });
+        }, 1000);
+
         console.log("Project opened successfully");
       } catch (error) {
         console.error("Error opening project:", error);
@@ -279,11 +334,11 @@ export default {
       genres: genres,
       instruments: instruments,
       filters: [
-          { value: 'hasTitle', label: 'Has Title' },
-          { value: 'hasDescription', label: 'Has Description' },
-          { value: 'hasGenres', label: 'Has Genres' },
-          { value: 'hasInstruments', label: 'Has Instruments' },
-        ],
+        { value: "hasTitle", label: "Has Title" },
+        { value: "hasDescription", label: "Has Description" },
+        { value: "hasGenres", label: "Has Genres" },
+        { value: "hasInstruments", label: "Has Instruments" },
+      ],
       selectedGenres,
       selectedInstruments,
       selectedFilters,
@@ -292,7 +347,7 @@ export default {
       clickProject,
     };
   },
-  components: { MultipleDropdown, HamburgerMenu }
+  components: { MultipleDropdown, HamburgerMenu },
 };
 </script>
 
@@ -300,7 +355,12 @@ export default {
   <div class="explorePage">
     <h1>Explore</h1>
     <HamburgerMenu />
-    <input type="text" v-model="searchQuery" class="search-input" placeholder="Search for projects by name...">
+    <input
+      type="text"
+      v-model="searchQuery"
+      class="search-input"
+      placeholder="Search for projects by name..."
+    />
     <div class="dropdowns">
       <MultipleDropdown
         :options="filters"
@@ -328,36 +388,84 @@ export default {
       </select>
     </div>
     <ul>
-      <div class="track" v-for="project in filteredProjects" :key="project._id" :style="{ position: 'relative' }">
+      <div
+        class="track"
+        v-for="project in filteredProjects"
+        :key="project._id"
+        :style="{ position: 'relative' }"
+      >
         <div class="leftPanel">
-          <h3 class="title">{{ project.title }}</h3>
+          <h3
+            class="title"
+            @click="clickProject(project)"
+            style="cursor: pointer"
+          >
+            {{ project.title }}
+          </h3>
           <div class="attributes">
             <div class="info">
               <h3 class="creator">{{ project.user }}</h3>
               <div class="description">
                 <h3>{{ project.description }}</h3>
                 <div>
-                  <p v-if="project.genres && project.genres.length > 0" v-for="genre in project.genres" class="genre">{{ genre }}</p>
-                  <p v-if="project.instruments && project.instruments.length > 0" v-for="instrument in project.instruments" class="genre">{{ instrument }}</p>
+                  <!-- Container for genres -->
+                  <div v-if="project.genres && project.genres.length > 0">
+                    <p
+                      v-for="(genre, index) in project.genres"
+                      :key="'genre-' + project._id + '-' + index"
+                      class="genre"
+                    >
+                      {{ genre }}
+                    </p>
+                  </div>
+
+                  <!-- Container for instruments -->
+                  <div
+                    v-if="project.instruments && project.instruments.length > 0"
+                  >
+                    <p
+                      v-for="(instrument, index) in project.instruments"
+                      :key="'instrument-' + project._id + '-' + index"
+                      class="genre"
+                    >
+                      {{ instrument }}
+                    </p>
+                  </div>
                 </div>
               </div>
-              <div class="audioError" :style="{
-                  maxHeight: errorFile == project.title && !isPlaying ? '5em' : '0',
+              <div
+                class="audioError"
+                :style="{
+                  maxHeight:
+                    errorFile == project.title && !isPlaying ? '5em' : '0',
                   // transform: errorFile == project.title && !isPlaying ? 'ScaleY(1)' : 'ScaleY(0)'
-                  padding: errorFile == project.title && !isPlaying ? '0.2em 0.5em 0.25em 0.5em' : '0',
-                  marginTop: errorFile == project.title && !isPlaying ? '0.25em' : '0',
-                  color: errorFile == project.title && !isPlaying ? 'var(--colour-background)' : '#00000000'
-                }">
-                  <div v-if="errorFile == project.title && !isPlaying">Error: Unable to fetch project audio</div>
+                  padding:
+                    errorFile == project.title && !isPlaying
+                      ? '0.2em 0.5em 0.25em 0.5em'
+                      : '0',
+                  marginTop:
+                    errorFile == project.title && !isPlaying ? '0.25em' : '0',
+                  color:
+                    errorFile == project.title && !isPlaying
+                      ? 'var(--colour-background)'
+                      : '#00000000',
+                }"
+              >
+                <div v-if="errorFile == project.title && !isPlaying">
+                  Error: Unable to fetch project audio
                 </div>
+              </div>
             </div>
           </div>
+          <div>
+            <p>{{ project.date }}</p>
+          </div>
         </div>
-        
+
         <div class="interact">
           <button
             class="contribute"
-            @click="contributeToProject(project.user, project.id)"
+            @click="contributeToProject(project)"
             :style="{
               backgroundColor: 'white',
               color: '#77a4f9',
@@ -365,27 +473,39 @@ export default {
               borderRadius: '5px',
               fontWeight: 'bold',
             }"
-          > Contribute
+          >
+            Contribute
           </button>
           <div class="likeDislike">
-            <button @click="vote(project.user, project.id, 'True')" class="like"><img src="../assets/Like.svg"/> {{ project.upvote_count }}</button>
-            <button @click="vote(project.user, project.id, 'False')" class="dislike"><img src="../assets/Dislike.svg"/> {{ project.downvote_count }}</button>
+            <button
+              @click="vote(project.user, project.id, 'True')"
+              class="like"
+            >
+              <img src="../assets/Like.svg" /> {{ project.upvote_count }}
+            </button>
+            <button
+              @click="vote(project.user, project.id, 'False')"
+              class="dislike"
+            >
+              <img src="../assets/Dislike.svg" /> {{ project.downvote_count }}
+            </button>
           </div>
         </div>
-        <button
-          class="play"
-          @click="playCombinedAudio(project.user, project.title)"
-        >
+        <button @click="playCombinedAudio(project._id, project)">
           <img
             src="../assets/Play.svg"
-            v-if="!isProjectPlaying(project.title, project.user)"
+            v-if="!isProjectPlaying(project._id)"
+            style="border: 1px solid red"
           />
-          <img src="../assets/Pause.svg" v-else />
+          <img
+            src="../assets/Pause.svg"
+            v-else
+            style="border: 1px solid green"
+          />
         </button>
       </div>
     </ul>
   </div>
-  
 </template>
 
 <style scoped>
@@ -437,7 +557,7 @@ h1 {
   margin: 0.5em;
 }
 
-.dropdowns .sort{
+.dropdowns .sort {
   text-align-last: right;
   direction: rtl;
   margin-left: auto;
@@ -551,7 +671,8 @@ h1 {
 
 .track .play {
   margin: 0 auto 0 1em;
-  filter: invert(40%) sepia(42%) saturate(559%) hue-rotate(182deg) brightness(100%) contrast(96%);
+  filter: invert(40%) sepia(42%) saturate(559%) hue-rotate(182deg)
+    brightness(100%) contrast(96%);
 }
 
 .track .interact {
@@ -583,15 +704,15 @@ h1 {
   border-radius: 0.5em;
   flex: 0.5;
   margin-top: 1em;
-  background-image: url('../assets/search.svg'); /* Path to your search icon */
+  background-image: url("../assets/search.svg"); /* Path to your search icon */
   background-repeat: no-repeat;
   background-position: 8px 50%;
   background-size: 20px 20px;
   background-color: var(--colour-background);
-  margin-bottom: 1em; 
+  margin-bottom: 1em;
   font-size: medium;
   outline: none;
-  color: var(--colour-text)
+  color: var(--colour-text);
 }
 .search-input::placeholder {
   color: var(--colour-interactable);

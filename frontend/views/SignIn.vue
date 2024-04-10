@@ -10,6 +10,7 @@ export default {
     const email = ref("");
     const password = ref("");
     const emailError = ref("");
+    const showPassword = ref(false);
     const passwordError = ref("");
     const loginError = ref("");
 
@@ -97,6 +98,7 @@ export default {
       emailError,
       passwordError,
       password,
+      showPassword,
       validateEmailForLogin,
       validatePassword,
       submitForm,
@@ -135,12 +137,14 @@ export default {
           v-model="password"
           class="text-field-custom"
           label="Password"
-          placeholder="*******"
-          type="password"
+          :type="showPassword ? 'text' : 'password'"
           variant="outlined"
+          :append-icon="showPassword ? 'mdi-eye-off' : 'mdi-eye'"
+          @click:append="showPassword = !showPassword"
           style="padding: 10px"
           @keydown.enter="submitForm"
         ></v-text-field>
+
         <div class="submitButtonContainer">
           <v-btn
             :disabled="!canSubmit"

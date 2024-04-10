@@ -3,38 +3,27 @@ import { ref, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import Slider from "../components/Slider.vue";
 import HamburgerMenu from "../components/HamburgerMenu.vue";
-import AudioEditor from "../components/AudioEditor.vue"
-import { genres, instruments } from '../assets/globalVariables.js';
+import AudioEditor from "../components/AudioEditor.vue";
+import { genres, instruments } from "../assets/globalVariables.js";
 import MultipleDropdown from "../components/MultipleDropdown.vue";
 import axios from "axios";
 
 const router = useRouter();
 const route = useRoute();
 const title = ref(router.currentRoute.value.params.title);
+let oldTitle = title.value;
 const audioFiles = ref([]);
 const volume = ref(100);
 const isPlaying = ref(false);
 const audioSrc = ref("");
+const comment = ref("");
+const comments = ref([]);
 const combinedAudioReady = ref(false);
 const isLoadingAudio = ref(true);
-const trackVolumes = [20,40,60,100];
-
-// onMounted(async () => {
-//   // Assuming the project title comes from the route parameters (update accordingly)
-//   projectTitle.value = route.params.title;
-
-//   const accessToken = localStorage.getItem("userToken");
-//   if (!accessToken) {
-//     console.error("No access token found. Redirecting to login...");
-//     router.push({ name: "SignIn" });
-//     return;
-//   }
-
-//   const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
-
-//   // Fetch the project by its title and the user's ID
-//   await fetchProjectData(userId, projectTitle.value);
-// });
+const trackVolumes = [20, 40, 60, 100];
+const trackStartPositions = [0, 0, 0, 0];
+const newCommentText = ref("");
+let isOwnProfile = ref(true);
 
 watch(
   audioFiles,
@@ -48,6 +37,104 @@ watch(
   },
   { deep: true }
 );
+
+const fetchComments = async () => {
+  const accessToken = localStorage.getItem("userToken");
+  const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+  
+  let projectDetailsString = localStorage.getItem("projectDetails");
+  let projectDetails = JSON.parse(projectDetailsString);
+
+  const response = await axios.get(
+    `http://127.0.0.1:5000/getComments/${projectDetails._id}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  comments.value = response.data;
+
+  comments.value.sort((a, b) => {
+    const dateA = new Date(a.date);
+    const dateB = new Date(b.date);
+    return dateA < dateB ? 1 : dateA > dateB ? -1 : 0;
+  });
+
+  const now = new Date();
+
+  comments.value.forEach((c) => {
+    // check if its the right user
+    c['canDelete'] = userId == c['user'];
+
+    let seconds = Math.floor((now - new Date(c.date)) / 1000);
+
+    if (seconds < 60) {
+      c.date = `${seconds} second${seconds === 1 ? "" : "s"} ago`;
+    } else if (seconds < 3600) {
+      seconds = Math.floor(seconds / 60);
+      c.date = `${seconds} minute${seconds === 1 ? "" : "s"} ago`;
+    } else if (seconds < 86400) {
+      seconds = Math.floor(seconds / 3600);
+      c.date = `${seconds} hour${seconds === 1 ? "" : "s"} ago`;
+    } else if (seconds < 31536000) {
+      seconds = Math.floor(seconds / 86400);
+      c.date = `${seconds} day${seconds === 1 ? "" : "s"} ago`;
+    } else {
+      seconds = Math.floor(seconds / 31536000);
+      c.date = `${seconds} year${seconds === 1 ? "" : "s"} ago`;
+    }
+    console.log(c.date);
+  });
+};
+
+const submitComment = async (c) => {
+  const accessToken = localStorage.getItem("userToken");
+  const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+
+  let projectDetailsString = localStorage.getItem("projectDetails");
+  let projectDetails = JSON.parse(projectDetailsString);
+  let projectId = projectDetails._id;
+  try {
+    let max =
+      comments.value.length > 0
+        ? comments.value.reduce(
+            (max, c) => (parseInt(c.id) > max ? parseInt(c.id) : max),
+            parseInt(comments.value[0].id)
+          )
+        : 0;
+    const commentData = {
+      comment: comment.value,
+      date: new Date(),
+      id: max + 1,
+    };
+    const response = await axios.post(
+      `http://127.0.0.1:5000/addComment/${userId}/${projectId}`,
+      commentData,
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+    comment.value = "";
+    fetchComments();
+  } catch (error) {
+    console.error("Error fetching comments", error);
+  }
+};
+
+const deleteComment = async (id) => {
+  const accessToken = localStorage.getItem("userToken");
+  let projectDetailsString = localStorage.getItem("projectDetails");
+  let projectDetails = JSON.parse(projectDetailsString);
+  let projectId = projectDetails._id;
+  await axios.delete(
+    `http://127.0.0.1:5000/deleteComment/${projectId}/${id}`,
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    }
+  );
+  comments.value = comments.value.filter((c) => c.id !== id);
+};
 
 const togglePlay = async () => {
   const audioPlayer = document.getElementById("projectAudio");
@@ -79,9 +166,41 @@ const togglePlay = async () => {
     isPlaying.value = false;
   }
 };
+function normalizeProjectDetails(projectDetails) {
+  let normalizedDetails = { ...projectDetails };
+
+  // Convert _id if it's in object format
+  if (typeof normalizedDetails._id === "object" && normalizedDetails._id.$oid) {
+    normalizedDetails._id = normalizedDetails._id.$oid;
+  }
+
+  // Check and convert combinedAudioId if necessary
+  if (
+    normalizedDetails.combinedAudioId &&
+    typeof normalizedDetails.combinedAudioId === "object" &&
+    normalizedDetails.combinedAudioId.$oid
+  ) {
+    normalizedDetails.combinedAudioId = normalizedDetails.combinedAudioId.$oid;
+  }
+
+  // If there are other fields with similar structure, convert them here
+
+  return normalizedDetails;
+}
 
 async function streamAllAudioFiles() {
   isLoadingAudio.value = true;
+
+  let projectDetailsString = localStorage.getItem("projectDetails");
+  let projectDetails = JSON.parse(projectDetailsString);
+  let normalizedProjectDetails = normalizeProjectDetails(projectDetails);
+  if (!projectDetailsString) {
+    console.error("Project details not found.");
+    isLoadingAudio.value = false;
+    return;
+  }
+
+  const projectId = normalizedProjectDetails._id;
 
   const audioPlayer = document.getElementById("projectAudio");
   if (isPlaying.value) {
@@ -90,26 +209,28 @@ async function streamAllAudioFiles() {
   }
 
   const accessToken = localStorage.getItem("userToken");
-  const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
 
   try {
-    console.log("Combining all audio files in the backend...");
-    const response = await axios.get(
-      `http://127.0.0.1:5000/streamProjectAudios/${userId}/${encodeURIComponent(
-        title.value
-      )}`,
+    // First, ensure the audio files are combined in the backend and get the ID for the combined audio.
+    let combineResponse = await axios.get(
+      `http://127.0.0.1:5000/streamProjectAudios/${projectId}`,
       { headers: { Authorization: `Bearer ${accessToken}` } }
     );
-    console.log("Audio files combined successfully: ");
 
-    const combinedAudioUrl = `http://127.0.0.1:5000/streamProjectCombinedAudio/${userId}/${encodeURIComponent(
-      title.value
-    )}`;
-    audioSrc.value = combinedAudioUrl + "?v=" + new Date().getTime(); // Adding a timestamp to prevent caching
+    console.log(
+      "Audio files combined successfully:",
+      combineResponse.data.combinedAudioId
+    );
 
+    // Step 2: Stream the Combined Audio
+    const combinedAudioId = combineResponse.data.combinedAudioId;
+    const combinedAudioUrl = `http://127.0.0.1:5000/streamAudio/${combinedAudioId}`;
+    audioSrc.value = combinedAudioUrl;
+
+    console.log("Preparing to stream combined audio files...");
     await new Promise((resolve, reject) => {
       const audioPlayer = document.getElementById("projectAudio");
-      audioPlayer.src = audioSrc.value; // Use the updated src with the timestamp
+      audioPlayer.src = audioSrc.value;
 
       audioPlayer.onloadeddata = () => {
         console.log("Audio data has loaded and is now ready to play");
@@ -117,53 +238,72 @@ async function streamAllAudioFiles() {
         resolve();
       };
 
-      audioPlayer.onerror = () => {
-        console.error("Error loading combined audio");
-        reject("Error loading audio");
+      audioPlayer.onerror = (event) => {
+        console.error("Error loading combined audio", event);
+        isLoadingAudio.value = false;
+        reject(new Error("Error loading combined audio"));
       };
-
       audioPlayer.load();
     });
 
     combinedAudioReady.value = true;
   } catch (error) {
-    console.error("Error combining or streaming audio files:", error);
+    console.error("Error in combining or streaming audio files:", error);
+    isLoadingAudio.value = false;
   }
 }
 
 async function fetchAudioFiles() {
+  isLoadingAudio.value = true;
   const accessToken = localStorage.getItem("userToken");
   const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+  let projectDetailsString = localStorage.getItem("projectDetails");
+  console.log(projectDetailsString);
+  let projectDetails = JSON.parse(projectDetailsString);
+  console.log(projectDetails);
+
+  // Conditionally set projectId based on the _id type
+  let projectId;
+  if (typeof projectDetails._id === "object" && projectDetails._id.$oid) {
+    projectId = projectDetails._id.$oid; // If _id is an object with $oid
+  } else {
+    projectId = projectDetails._id; // If _id is a string
+  }
 
   try {
     const response = await axios.get(
-      `http://127.0.0.1:5000/getAudios/${userId}/${encodeURIComponent(
-        title.value
-      )}`,
+      `http://127.0.0.1:5000/getProjectDetails/${projectId}/${userId}`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
         },
       }
     );
-    audioFiles.value = response.data.map((file) => ({
-      ...file,
-      src: `http://127.0.0.1:5000/streamAudio/${file.audioFileId}`,
-    }));
 
-    trackVolumes.value = response.data.map((file) => file.Volumes);
+    console.log("Audio files and project ownership fetched:", response.data);
+    audioFiles.value =
+      response.data.audioFiles?.map((file) => ({
+        ...file,
+        src: `http://127.0.0.1:5000/streamAudio/${file.audioFileId}`,
+      })) || [];
 
-    console.log("Audio files have been fetched and processed");
-    console.log(JSON.stringify(audioFiles,null,2));
-    console.log("Track Volumes:", trackVolumes.value);
-    console.log("Track Volume 3:", trackVolumes.value[2]);
+    trackVolumes.value = audioFiles.value.map((file) => file.Volumes);
+    trackStartPositions.value = audioFiles.value.map(
+      (file) => file.Start_Position
+    );
+
+    isOwnProfile = response.data.isOwnProfile;
+    console.log("Is this the user's own project?:", isOwnProfile);
   } catch (error) {
-    console.error("Error fetching audio files:", error);
+    console.error("Error fetching project details:", error);
+  } finally {
+    isLoadingAudio.value = false;
   }
 }
 
 onMounted(async () => {
   await fetchAudioFiles();
+  await fetchComments();
 });
 
 function updateVolume(newVolume) {
@@ -172,13 +312,11 @@ function updateVolume(newVolume) {
   audioPlayer.volume = volumeValue;
 }
 
-
-
-
-
 /* qweoifnqwpeiofubqweifubqweofiubqweofiuqbweofiuqbwefoiuqwbefoqiuwefoqwieufbqwef */
-async function updateTrackVolume(index, newVolume) {
+async function updateTrackVolume(audio, index, newVolume) {
   isLoadingAudio.value = true;
+
+  audio.Volumes = newVolume;
 
   const audioPlayer = document.getElementById("projectAudio");
   if (isPlaying.value) {
@@ -189,29 +327,29 @@ async function updateTrackVolume(index, newVolume) {
   const accessToken = localStorage.getItem("userToken");
   const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
 
-  const indexString = String(index)
-  const volumeString = String(newVolume)
+  const indexString = String(index);
+  const volumeString = String(newVolume);
 
   try {
-
     console.log("Combining all audio files in the backend...");
     const volumeResponse = await axios.get(
-      `http://127.0.0.1:5000/updateAudioVolume/${userId}/${encodeURIComponent(title.value)}/${indexString}/${volumeString}`,
+      `http://127.0.0.1:5000/updateAudioVolume/${userId}/${encodeURIComponent(
+        title.value
+      )}/${indexString}/${volumeString}`,
       { headers: { Authorization: `Bearer ${accessToken}` } }
     );
-    
-    streamAllAudioFiles();
 
+    streamAllAudioFiles();
   } catch (error) {
     console.error("Error combining or streaming audio files:", error);
   }
-
 }
 
 const debouncedUpdateTrackVolume = debounce(updateTrackVolume, 500);
+
 function debounce(func, delay) {
   let debounceTimer;
-  return function() {
+  return function () {
     const context = this;
     const args = arguments;
     clearTimeout(debounceTimer);
@@ -219,9 +357,107 @@ function debounce(func, delay) {
   };
 }
 
+async function updateTrackMute(audio, index) {
+  isLoadingAudio.value = true;
 
+  audio.Mute = !audio.Mute;
 
+  const audioPlayer = document.getElementById("projectAudio");
+  if (isPlaying.value) {
+    audioPlayer.pause();
+    isPlaying.value = false;
+  }
 
+  console.log("Muted!!!!!");
+
+  const accessToken = localStorage.getItem("userToken");
+  const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+
+  const indexString = String(index);
+
+  try {
+    console.log("Muting File in the backend...");
+    const muteResponse = await axios.get(
+      `http://127.0.0.1:5000/updateTrackMute/${userId}/${encodeURIComponent(
+        title.value
+      )}/${indexString}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+
+    streamAllAudioFiles();
+  } catch (error) {
+    console.error("Error combining or streaming audio files:", error);
+  }
+}
+
+async function updateTrackSolo(audio, index) {
+  isLoadingAudio.value = true;
+
+  audio.Solo = !audio.Solo;
+
+  const audioPlayer = document.getElementById("projectAudio");
+  if (isPlaying.value) {
+    audioPlayer.pause();
+    isPlaying.value = false;
+  }
+
+  console.log("Muted!!!!!");
+
+  const accessToken = localStorage.getItem("userToken");
+  const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+
+  const indexString = String(index);
+
+  try {
+    console.log("Muting File in the backend...");
+    const soloResponse = await axios.get(
+      `http://127.0.0.1:5000/updateTrackSolo/${userId}/${encodeURIComponent(
+        title.value
+      )}/${indexString}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+
+    streamAllAudioFiles();
+  } catch (error) {
+    console.error("Error combining or streaming audio files:", error);
+  }
+}
+
+const debouncedUpdateTrackPosition = debounce(updateTrackPosition, 500);
+async function updateTrackPosition(audio, index, trackPos) {
+  isLoadingAudio.value = true;
+
+  console.log("New Position: ");
+  console.log(trackPos);
+
+  audio.Start_Position = trackPos;
+
+  const audioPlayer = document.getElementById("projectAudio");
+  if (isPlaying.value) {
+    audioPlayer.pause();
+    isPlaying.value = false;
+  }
+
+  const accessToken = localStorage.getItem("userToken");
+  const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+
+  const indexString = String(index);
+  const trackPosString = String(trackPos);
+
+  try {
+    console.log("Combining all audio files in the backend...");
+    const positionResponse = await axios.get(
+      `http://127.0.0.1:5000/updateAudioPosition/${userId}/${encodeURIComponent(
+        title.value
+      )}/${indexString}/${trackPosString}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+
+    streamAllAudioFiles();
+  } catch (error) {
+    console.error("Error combining or streaming audio files:", error);
+  }
+}
 
 const addAudioRow = () => {
   audioFiles.value.push({ source: "" });
@@ -233,6 +469,7 @@ const triggerFileInput = (index) => {
 const triggerNewFileInput = () => {
   document.getElementById("new-file-input").click();
 };
+
 const updateFile = async (index, event) => {
   const file = event.target.files[0];
   if (file) {
@@ -240,13 +477,23 @@ const updateFile = async (index, event) => {
     formData.append("file", file);
     const accessToken = localStorage.getItem("userToken");
     const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+    let projectDetailsString = localStorage.getItem("projectDetails");
+    console.log(projectDetailsString);
+    let projectDetails = JSON.parse(projectDetailsString);
+    console.log(projectDetails);
+
+    // Conditionally set projectId based on the _id type
+    let projectId;
+    if (typeof projectDetails._id === "object" && projectDetails._id.$oid) {
+      projectId = projectDetails._id.$oid; // If _id is an object with $oid
+    } else {
+      projectId = projectDetails._id; // If _id is a string
+    }
 
     try {
       console.log("Uploading file...");
       const response = await axios.post(
-        `http://127.0.0.1:5000/uploadAudioToProject/${userId}/${encodeURIComponent(
-          title.value
-        )}/${index}`,
+        `http://127.0.0.1:5000/uploadAudioToProject/${userId}/${projectId}/${index}`, // Updated URL
         formData,
         {
           headers: {
@@ -285,11 +532,23 @@ const deleteAudioFile = async (index) => {
 
   const accessToken = localStorage.getItem("userToken");
   const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+  let projectDetailsString = localStorage.getItem("projectDetails");
+  console.log(projectDetailsString);
+  let projectDetails = JSON.parse(projectDetailsString);
+  console.log(projectDetails);
+
+  // Conditionally set projectId based on the _id type
+  let projectId;
+  if (typeof projectDetails._id === "object" && projectDetails._id.$oid) {
+    projectId = projectDetails._id.$oid; // If _id is an object with $oid
+  } else {
+    projectId = projectDetails._id; // If _id is a string
+  }
 
   try {
     console.log("Deleting file...");
     await axios.delete(
-      `http://127.0.0.1:5000/deleteAudio/${userId}/${fileToDelete.audioFileId}`,
+      `http://127.0.0.1:5000/deleteAudio/${projectId}/${fileToDelete.audioFileId}`,
       {
         headers: {
           Authorization: `Bearer ${accessToken}`,
@@ -306,6 +565,102 @@ const deleteAudioFile = async (index) => {
       "Error deleting the file:",
       error.response ? error.response.data : error
     );
+  }
+};
+const sendTrackNameUpdate = async (audioFileId, newFilename) => {
+  const accessToken = localStorage.getItem("userToken");
+  const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+  let projectTitle = title.value;
+  console.log(userId);
+  console.log(newFilename);
+  try {
+    console.log("Updating file name...");
+    const response = await axios.put(
+      `http://127.0.0.1:5000/updateAudioFilename/${userId}/${audioFileId}`,
+      { audioFilename: newFilename, projectTitle: projectTitle }, // add projectTitle here
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+    console.log("File name updated successfully", response.data);
+    // Handle any additional state updates or UI feedback here
+  } catch (error) {
+    console.error(
+      "Error updating the file name:",
+      error.response ? error.response.data : error
+    );
+    // Handle error state or UI feedback here
+  }
+};
+const sendProjectTitleUpdate = async () => {
+  const accessToken = localStorage.getItem("userToken");
+  const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+
+  try {
+    console.log("Updating project title...");
+    const response = await axios.put(
+      `http://127.0.0.1:5000/updateProjectTitle/${userId}`,
+      { oldProjectTitle: oldTitle, newProjectTitle: title.value },
+      {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      }
+    );
+    console.log("Project title updated successfully", response.data);
+    // Update oldTitleValue to the new title after a successful update
+    oldTitle = title.value;
+  } catch (error) {
+    console.error(
+      "Error updating the project title:",
+      error.response ? error.response.data : error
+    );
+  }
+};
+
+const contributeToProject = async () => {
+  const accessToken = localStorage.getItem("userToken");
+  const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+  let projectDetailsString = localStorage.getItem("projectDetails");
+  console.log(projectDetailsString);
+  let projectDetails = JSON.parse(projectDetailsString);
+  console.log(projectDetails);
+
+  // Conditionally set projectId based on the _id type
+  let projectId;
+  if (typeof projectDetails._id === "object" && projectDetails._id.$oid) {
+    projectId = projectDetails._id.$oid; // If _id is an object with $oid
+  } else {
+    projectId = projectDetails._id; // If _id is a string
+  }
+  try {
+    const accessToken = localStorage.getItem("userToken");
+    // Make the post request and wait for the response
+    const response = await axios.post(
+      `http://127.0.0.1:5000/contributeToProject`,
+      {
+        projectId: projectId,
+        userId: userId,
+      },
+      {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }
+    );
+
+    // If the response is successful, execute the following
+    alert("Project copied successfully!");
+    console.log("about to parse");
+    const newProject = JSON.parse(response.data.newProject);
+    consol.log("about to print");
+    console.log("New Project:", newProject);
+    console.log("about to redirect");
+    clickProject(newProject); // Use the new project's _id to handle the project
+  } catch (error) {
+    // If there is an error, log it and show an alert
+    console.error("Error contributing to project:", error);
+    alert(error.response?.data.message || "An error occurred");
   }
 };
 </script>
@@ -331,11 +686,15 @@ export default {
           <span>share</span>
           <span>help</span>
         </div>
-        <input type="text" id="project_name"v-bind:title="title" v-model = "title"/>
+        <input
+          type="text"
+          id="project_name"
+          :title="title.value"
+          v-model="title"
+          @keyup.enter.stop="sendProjectTitleUpdate"
+        />
       </div>
-      <div class="right">
-       <!--  <HamburgerMenu /> -->
-      </div>
+      <div class="right"></div>
       <div class="centre">
         <div id="playbackControls">
           <p v-if="isLoadingAudio" style="text-align: center">Loading...</p>
@@ -363,78 +722,208 @@ export default {
           <table>
             <tr v-for="(audio, index) in audioFiles" :key="index">
               <td class="trackControls">
-                <button
-                  class="delete"
-                  title="Delete Track"
-                  @click="deleteAudioFile(index)"
-                >
-                  <h2>x</h2>
-                </button>
+                <template v-if="isOwnProfile">
+                  <button
+                    class="delete"
+                    title="Delete Track"
+                    @click="deleteAudioFile(index)"
+                  >
+                    <h2>x</h2>
+                  </button>
+                </template>
                 <div class="properties">
-                  <textarea placeholder="Enter track name..." v-model="audio.audioFilename"></textarea>
-                  <div class="volume">
-                    <Slider :value="trackVolumes.value[index]" @update:modelValue="newVolume => debouncedUpdateTrackVolume(index, newVolume)" :min="0" :max="100" />
-                    <button title="Solo Track">S</button>
-                    <button title="Mute Track">M</button>
-                    <input
-                      type="file"
-                      :id="'file-input-' + index"
-                      @change="(event) => updateFile(index, event)"
-                      accept="audio/*"
-                      style="display: none"
-                    /><button
-                      v-if="isLoadingAudio"
-                      title="Change Track"
-                      style="cursor: not-allowed"
-                    >
-                      C
-                    </button>
-                    <button
-                      v-else
-                      title="Change Track"
-                      @click="triggerFileInput(index)"
-                    >
-                      C
-                    </button>
-                  </div>
+                  <template v-if="isOwnProfile">
+                    <textarea
+                      placeholder="Enter track name..."
+                      v-model="audio.audioFilename"
+                      @keyup.enter.stop="
+                        sendTrackNameUpdate(
+                          audio.audioFileId,
+                          audio.audioFilename
+                        )
+                      "
+                    ></textarea>
+                  </template>
+                  <template v-else>
+                    <textarea
+                      placeholder="Enter track name..."
+                      v-model="audio.audioFilename"
+                      @keyup.enter.stop="
+                        sendTrackNameUpdate(
+                          audio.audioFileId,
+                          audio.audioFilename
+                        )
+                      "
+                      disabled
+                    ></textarea>
+                  </template>
+
+                  <template v-if="isOwnProfile">
+                    <div class="volume">
+                      <Slider
+                        :value="audio.Volumes"
+                        @update:modelValue="
+                          (newVolume) =>
+                            debouncedUpdateTrackVolume(audio, index, newVolume)
+                        "
+                        :min="0"
+                        :max="100"
+                      />
+                      <button
+                        title="Solo Track"
+                        :style="{
+                          backgroundColor: audio.Solo
+                            ? 'var(--colour-interactable)'
+                            : 'var(--colour-background)',
+                          color: audio.Solo
+                            ? 'var(--colour-background)'
+                            : 'var(--colour-interactable)',
+                        }"
+                        @click="updateTrackSolo(audio, index)"
+                      >
+                        S
+                      </button>
+                      <button
+                        title="Mute Track"
+                        :style="{
+                          backgroundColor: audio.Mute
+                            ? 'var(--colour-interactable)'
+                            : 'var(--colour-background)',
+                          color: audio.Mute
+                            ? 'var(--colour-background)'
+                            : 'var(--colour-interactable)',
+                        }"
+                        @click="updateTrackMute(audio, index)"
+                      >
+                        M
+                      </button>
+                      <input
+                        type="file"
+                        :id="'file-input-' + index"
+                        @change="(event) => updateFile(index, event)"
+                        accept="audio/*"
+                        style="display: none"
+                      /><button
+                        v-if="isLoadingAudio"
+                        title="Change Track"
+                        style="cursor: not-allowed"
+                      >
+                        C
+                      </button>
+                      <button
+                        v-else
+                        title="Change Track"
+                        @click="() => triggerFileInput(index)"
+                      >
+                        C
+                      </button>
+                    </div>
+                  </template>
                 </div>
-                <!-- FOR FUTURE RELEASES. -->
-                <!-- <button class="record" title="Record">
-                  <h2>•</h2>
-                </button> -->
               </td>
               <td class="trackPreview">
-                <!-- ALL BELOW VALUES IN SECONDS -->
-                <AudioEditor
-                  :initOffset = "0.0"
-                  :initTrackLength = "180.0"
-                  :initFileLength = "10.0"
-                />
+                <template v-if="isOwnProfile">
+                  <AudioEditor
+                    @update:offset="
+                      (trackPos) =>
+                        debouncedUpdateTrackPosition(audio, index, trackPos)
+                    "
+                    :initOffset="audio.Start_Position"
+                    :initTrackLength="180.0"
+                    :initFileLength="10.0"
+                  />
+                </template>
+
+                <template v-else>
+                  <AudioEditor
+                    @update:offset="
+                      (trackPos) =>
+                        debouncedUpdateTrackPosition(audio, index, trackPos)
+                    "
+                    :initOffset="audio.Start_Position"
+                    :initTrackLength="180.0"
+                    :initFileLength="10.0"
+                    style="pointer-events: none"
+                /></template>
               </td>
             </tr>
           </table>
         </div>
       </div>
-      <input
-        type="file"
-        id="new-file-input"
-        @change="(event) => updateFile(audioFiles.length, event)"
-        accept="audio/*"
-        style="display: none"
-      />
-      <p v-if="isLoadingAudio" style="text-align: center; margin-top: 20px">
-        Please wait for files to load...
-      </p>
-      <button
-        v-if="isLoadingAudio"
-        style="margin-top: 20px; cursor: not-allowed"
-        disabled
+      <template v-if="isOwnProfile">
+        <input
+          type="file"
+          id="new-file-input"
+          @change="(event) => updateFile(audioFiles.length, event)"
+          accept="audio/*"
+          style="display: none"
+        />
+        <p v-if="isLoadingAudio" style="text-align: center; margin-top: 20px">
+          Please wait for files to load...
+        </p>
+        <button
+          v-if="isLoadingAudio"
+          style="margin-top: 20px; cursor: not-allowed"
+          disabled
+        >
+          Add Audio File
+        </button>
+        <button v-else @click="triggerNewFileInput" style="margin-top: 20px">
+          Add Audio File
+        </button> </template
+      ><template v-else
+        ><p v-if="isLoadingAudio" style="text-align: center; margin-top: 20px">
+          Please wait for files to load...
+        </p>
+        <button
+          v-if="isLoadingAudio"
+          style="margin-top: 20px; cursor: not-allowed"
+          disabled
+        >
+          Contribute
+        </button>
+        <button v-else @click="contributeToProject" style="margin-top: 20px">
+          Contribute
+        </button></template
       >
-        Add Audio File
-      </button>
-      <button v-else @click="triggerNewFileInput" style="margin-top: 20px">
-        Add Audio File
-      </button>
+      <div class="separatorLine"></div>
+      <div style="margin-top: 50px">
+        <h2 style="font-family: 'Delta Gothic One'">Comments</h2>
+      </div>
+      <div
+        style="
+          margin-top: 10px;
+          justify-content: center;
+          display: flex;
+          align-items: center;
+        "
+      >
+        <textarea
+          type="text"
+          v-model="comment"
+          class="addComment"
+          placeholder="Comment..."
+        />
+        <button @click="submitComment">Post</button>
+      </div>
+      <div>
+        <ul>
+          <div class="comments" v-for="com in comments" :key="com._id">
+            <div class="box">
+              <h3 class="user" style="font-weight: bold">{{ com.username }}</h3>
+            </div>
+            <div class="box">
+              <h3 class="user" style="font-weight: bold">{{ com.date }}</h3>
+            </div>
+            <div class="box">
+              <h3 class="description">{{ com.comment }}</h3>
+            </div>
+            <button v-if="com.canDelete" @click="deleteComment(com.id)">
+              Delete
+            </button>
+          </div>
+        </ul>
+      </div>
     </div>
   </div>
 </template>
@@ -528,6 +1017,47 @@ div.first {
   color: var(--colour-interactable);
 }
 
+.addComment {
+  width: 50%;
+  padding: 0.5em 2em 0.5em 2em;
+  border: 0px solid var(--colour-interactable);
+  border-radius: 0.5em;
+  flex: 0.5;
+  margin-top: 1em;
+  background-image: url("../assets/comment.png");
+  background-repeat: no-repeat;
+  background-position: 5px 20%;
+  background-size: 20px 20px;
+  background-color: var(--colour-panel-soft);
+  margin-bottom: 1em;
+  font-size: medium;
+  outline: none;
+  height: 70px;
+  resize: vertical;
+  overflow-y: auto;
+  color: var(--colour-text);
+}
+.addComment::placeholder {
+  color: var(--colour-interactable);
+}
+
+.comments {
+  background-color: var(--colour-panel-soft);
+  color: var(--colour-text);
+  text-align: left;
+  display: flex;
+  padding: 0.5em;
+  margin: 0 1em 1em 1em;
+  border-radius: 1em;
+  flex-direction: column; /* Change flex-direction to column */
+  max-height: 200px; /* Set a maximum height for the comments box */
+  overflow-y: auto;
+}
+
+.comments .box {
+  font-family: "Fredoka";
+  font-size: 12px;
+}
 .trackControls button.record {
   margin: 0.5em 0.5em 0.5em 0;
   padding: 0 0.5em 0 0.5em;
@@ -538,11 +1068,41 @@ div.first {
 
 tr .trackPreview {
   padding: 0 1em 0 1em;
-  overflow:visible;
+  overflow: visible;
 }
 
 tr .trackPreview .editor {
   height: 6em;
+}
+
+.trackControls button.button-muted {
+  color: white;
+  background-color: #262673;
+}
+
+.trackControls button.button-unmuted {
+  color: var(--colour-background);
+  background-color: var(--colour-interactable);
+}
+
+.trackControls button.toggle-button {
+  color: var(--colour-background);
+  background-color: var(--colour-interactable);
+}
+
+.button-muted {
+  color: white;
+  background-color: #262673;
+}
+
+.button-unmuted {
+  color: var(--colour-background);
+  background-color: var(--colour-interactable);
+}
+
+.toggle-button {
+  color: white;
+  background-color: white;
 }
 
 #ribbon {
@@ -704,5 +1264,58 @@ button#hamburger img {
   padding: 1em 1em 1em 2em;
   background-color: var(--colour-interactable);
   border-radius: 5em 0 0 5em;
+}
+.addComment {
+  width: 50%;
+  padding: 0.5em 2em 0.5em 2em;
+  border: 0px solid var(--colour-interactable);
+  border-radius: 0.5em;
+  flex: 0.5;
+  margin-top: 1em;
+  background-image: url("../assets/comment.png");
+  background-repeat: no-repeat;
+  background-position: 5px 20%;
+  background-size: 20px 20px;
+  background-color: var(--colour-panel-soft);
+  margin-bottom: 1em;
+  font-size: medium;
+  outline: none;
+  height: 70px;
+  resize: vertical;
+  overflow-y: auto;
+  color: var(--colour-text);
+  z-index: 0;
+}
+.addComment::placeholder {
+  color: var(--colour-interactable);
+}
+
+.comments {
+  background-color: var(--colour-panel-soft);
+  color: var(--colour-text);
+  text-align: left;
+  display: flex;
+  padding: 0.5em;
+  margin: 0 1em 1em 1em;
+  border-radius: 1em;
+  flex-direction: column; /* Change flex-direction to column */
+  max-height: 200px; /* Set a maximum height for the comments box */
+  overflow-y: auto;
+  z-index: -5001;
+}
+
+.comments .box {
+  font-family: "Fredoka";
+  font-size: 12px;
+}
+.separatorLine {
+  position: relative;
+  width: 90%;
+  left: 5%;
+  height: 10px;
+  background-color: #77afff;
+  border-radius: 10px;
+  margin-top: 3vh;
+  z-index: -5001;
 }
 </style>

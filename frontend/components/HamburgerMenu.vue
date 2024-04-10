@@ -8,13 +8,13 @@ export default {
 };
 </script>
 
-
 <template>
-  <div class="buttonAndDrawer">
+  <div class="buttonAndDrawer" style="position: relative; z-index: 5200">
     <button id="hamburger" @click="drawerVisible = true">
       <img src="@/assets/Hamburger Menu.svg" />
     </button>
-    <div id="drawer"
+    <div
+      id="drawer"
       :style="{
         width: drawerVisible ? '25em' : '0',
         paddingLeft: drawerVisible ? '10px' : '0',
@@ -31,7 +31,6 @@ export default {
 </template>
 
 <style scoped>
-
 button#hamburger {
   position: absolute;
   top: 0;
@@ -61,7 +60,7 @@ button#hamburger img {
   background: var(--colour-interactable);
   font-family: "Delta Gothic One";
   transition: all 0.2s;
-  z-index: 1000;
+  z-index: 5200;
 }
 
 #drawer ul {
@@ -87,7 +86,7 @@ button#hamburger img {
   font-family: "Fredoka";
   font-size: 2.5em;
   min-width: 0;
-  padding: 0 .5em 0 0.5em;
+  padding: 0 0.5em 0 0.5em;
 }
 
 #drawer button.close:hover {
