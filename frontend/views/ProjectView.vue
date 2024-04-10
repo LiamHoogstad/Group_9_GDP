@@ -23,6 +23,7 @@ const isLoadingAudio = ref(true);
 const trackVolumes = [20, 40, 60, 100];
 const trackStartPositions = [0, 0, 0, 0];
 const newCommentText = ref("");
+const areCommentsOpen = ref(false);
 let isOwnProfile = ref(true);
 const upvotes = ref(0);
 const downvotes = ref(0);
@@ -720,10 +721,78 @@ export default {
 
 <template>
   <div class="projectPage">
+    <button
+      class="comments-button"
+      @click="
+        () => {
+          areCommentsOpen = true;
+        }
+      "
+    >
+      comments
+    </button>
+    <div
+      class="comments-area"
+      :style="{
+        maxHeight: areCommentsOpen ? '15em' : '0',
+        boxShadow: areCommentsOpen
+          ? '0 0 0.5em var(--colour-dropshadow)'
+          : 'none',
+        zIndex: areCommentsOpen ? '' : '-1',
+      }"
+    >
+      <button
+        class="close-comments"
+        @click="
+          () => {
+            areCommentsOpen = false;
+          }
+        "
+        :style="{
+          display: areCommentsOpen ? '' : 'none',
+        }"
+      >
+        x
+      </button>
+      <div
+        class="comments-box"
+        style="
+          margin-top: 10px;
+          justify-content: center;
+          display: flex;
+          align-items: center;
+        "
+      >
+        <textarea
+          type="text"
+          v-model="comment"
+          class="addComment"
+          placeholder="Comment..."
+        />
+        <button @click="submitComment">Post</button>
+      </div>
+      <div>
+        <ul>
+          <div class="comments" v-for="com in comments" :key="com._id">
+            <div class="box">
+              <h3 class="user" style="font-weight: bold">{{ com.username }}</h3>
+            </div>
+            <div class="box">
+              <h3 class="user" style="font-weight: bold">{{ com.date }}</h3>
+            </div>
+            <div class="box">
+              <h3 class="description">{{ com.comment }}</h3>
+            </div>
+            <button v-if="com.canDelete" @click="deleteComment(com.id)">
+              Delete
+            </button>
+          </div>
+        </ul>
+      </div>
+    </div>
     <div id="ribbon">
       <div class="left">
-        <div class="dropdowns">
-        </div>
+        <div class="dropdowns"></div>
         <input
           type="text"
           id="project_name"
@@ -758,16 +827,19 @@ export default {
           <img src="../assets/Dislike.svg" /> {{ downvotes }}
         </button>
       </div>
-      <div class="right">
-        <HamburgerMenu />
-      </div>
+      <div class="right"></div>
     </div>
     <div class="upload-area" style="text-align: center">
       <div class="first" style="margin-top: 20px">
         <div class="second">
           <table>
             <tr v-for="(audio, index) in audioFiles" :key="index">
-              <td class="trackControls">
+              <td
+                class="trackControls"
+                :style="{
+                  paddingTop: isOwnProfile ? '' : '1em',
+                }"
+              >
                 <template v-if="isOwnProfile">
                   <button
                     class="delete"
@@ -777,7 +849,12 @@ export default {
                     <h2>x</h2>
                   </button>
                 </template>
-                <div class="properties">
+                <div
+                  class="properties"
+                  :style="{
+                    marginLeft: isOwnProfile ? '' : '2em',
+                  }"
+                >
                   <template v-if="isOwnProfile">
                     <textarea
                       placeholder="Enter track name..."
@@ -916,7 +993,7 @@ export default {
         </p>
         <button
           v-if="isLoadingAudio"
-          style="margin-top: 20px; cursor: not-allowed"
+          style="margin: 20px; cursor: not-allowed"
           disabled
         >
           Add New Track
@@ -925,7 +1002,7 @@ export default {
           Add New Track
         </button> </template
       ><template v-else
-        ><p v-if="isLoadingAudio" style="text-align: center; margin-top: 20px">
+        ><p v-if="isLoadingAudio" style="text-align: center; margin: 20px">
           Please wait for files to load...
         </p>
         <button
@@ -939,51 +1016,20 @@ export default {
           Contribute
         </button></template
       >
-      <div class="separatorLine"></div>
-      <div style="margin-top: 50px">
-        <h2 style="font-family: 'Delta Gothic One'">Comments</h2>
-      </div>
-      <div
-        style="
-          margin-top: 10px;
-          justify-content: center;
-          display: flex;
-          align-items: center;
-        "
-      >
-        <textarea
-          type="text"
-          v-model="comment"
-          class="addComment"
-          placeholder="Comment..."
-        />
-        <button @click="submitComment">Post</button>
-      </div>
-      <div>
-        <ul>
-          <div class="comments" v-for="com in comments" :key="com._id">
-            <div class="box">
-              <h3 class="user" style="font-weight: bold">{{ com.username }}</h3>
-            </div>
-            <div class="box">
-              <h3 class="user" style="font-weight: bold">{{ com.date }}</h3>
-            </div>
-            <div class="box">
-              <h3 class="description">{{ com.comment }}</h3>
-            </div>
-            <button v-if="com.canDelete" @click="deleteComment(com.id)">
-              Delete
-            </button>
-          </div>
-        </ul>
-      </div>
     </div>
+    <HamburgerMenu />
   </div>
 </template>
 
 <style scoped>
+#app {
+  overflow: hidden !important;
+}
+.projectPage {
+  /* min-height: 100vh; */
+}
 .upload-area {
-  contain: size;
+  margin-top: 6em;
 }
 
 table {
@@ -1057,6 +1103,7 @@ div.first {
 
 .trackControls .properties input.slider {
   flex-grow: 1;
+  width: 0px;
 }
 
 .trackControls .properties button {
@@ -1067,30 +1114,6 @@ div.first {
   line-height: 0.3em;
   font-weight: 600;
   background-color: var(--colour-background);
-  color: var(--colour-interactable);
-}
-
-.addComment {
-  width: 50%;
-  padding: 0.5em 2em 0.5em 2em;
-  border: 0px solid var(--colour-interactable);
-  border-radius: 0.5em;
-  flex: 0.5;
-  margin-top: 1em;
-  background-image: url("../assets/comment.png");
-  background-repeat: no-repeat;
-  background-position: 5px 20%;
-  background-size: 20px 20px;
-  background-color: var(--colour-panel-soft);
-  margin-bottom: 1em;
-  font-size: medium;
-  outline: none;
-  height: 70px;
-  resize: vertical;
-  overflow-y: auto;
-  color: var(--colour-text);
-}
-.addComment::placeholder {
   color: var(--colour-interactable);
 }
 
@@ -1160,10 +1183,13 @@ tr .trackPreview .editor {
 
 #ribbon {
   width: 100%;
-  position: sticky;
+  position: fixed;
+  top: 0;
   contain: layout;
   background-color: var(--colour-panel-soft);
+  box-shadow: 0 0 0.5em var(--colour-dropshadow);
   padding: 0.5em 0 0 0;
+  z-index: 5;
 }
 
 #ribbon .left {
@@ -1318,8 +1344,36 @@ button#hamburger img {
   background-color: var(--colour-interactable);
   border-radius: 5em 0 0 5em;
 }
+
+.comments-area {
+  position: fixed;
+  overflow-y: scroll;
+  width: 100%;
+  bottom: 0;
+  padding-bottom: 1em;
+  background-color: var(--colour-background);
+  border-radius: 1em;
+  transition: all 100ms;
+}
+
+.comments-button {
+  position: fixed;
+  bottom: 0;
+  right: 0;
+  margin: 1em;
+}
+
+.comments-area button.close-comments {
+  font-family: "Fredoka";
+  position: fixed;
+  left: 0;
+  border-radius: 0 0 1em 0;
+}
+
 .addComment {
   width: 50%;
+  height: 4em;
+  resize: none;
   padding: 0.5em 2em 0.5em 2em;
   border: 0px solid var(--colour-interactable);
   border-radius: 0.5em;
@@ -1333,14 +1387,17 @@ button#hamburger img {
   margin-bottom: 1em;
   font-size: medium;
   outline: none;
-  height: 70px;
   resize: vertical;
   overflow-y: auto;
   color: var(--colour-text);
-  z-index: 0;
 }
 .addComment::placeholder {
   color: var(--colour-interactable);
+}
+.comments-box button {
+  margin: 1em 0 0 0.5em;
+  height: calc(4em);
+  align-self: flex-start;
 }
 
 .comments {
@@ -1365,7 +1422,7 @@ button#hamburger img {
   position: relative;
   width: 90%;
   left: 5%;
-  height: 10px;
+  height: 0.5em;
   background-color: #77afff;
   border-radius: 10px;
   margin-top: 3vh;
