@@ -148,7 +148,7 @@ export default {
         try {
           // console.log(username, title);
           await axios.post(
-            `http://127.0.0.1:5000/upvoteProject/${userId}/${username}/${project_id}/${like}`,
+            `http://127.0.0.1:5000/upvoteProject/${userId}/${project_id}/${like}`,
             {},
             {
               headers: { Authorization: `Bearer ${accessToken}` },

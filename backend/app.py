@@ -42,7 +42,7 @@ try:
 except Exception as e:
     print(e)
 
-db = client.MusiCollab
+db = client.MusiCollabDB
 users_collection = db.users 
 grid_fs_bucket = GridFSBucket(db)
 
@@ -875,12 +875,28 @@ def delete_project(project_id):
 #     except Exception as e:
 #         return jsonify({'message': 'Error streaming combined audio: ' + str(e)}), 500
 
-@app.route('/upvoteProject/<current_user_id>/<username>/<project_id>/<like>', methods=['POST'])
-def upvote_project(current_user_id, username, project_id, like):
+@app.route('/getVotes/<project_id>', methods=['GET'])
+def get_votes(project_id):
+    project_id = ObjectId(project_id)
+    project_user = users_collection.find_one({"projects._id": project_id})
+    project = next((project for project in project_user.get('projects', []) if project['_id'] == project_id), None)
+    upvote_data = project.get('projectUpvote', [])
+    data = {'upvotes': 0, 'downvotes': 0}
+    for vote_data in upvote_data:
+        if vote_data['like']:
+            data['upvotes'] += 1
+        else:
+            data['downvotes'] += 1
+    return jsonify(data), 200
+
+
+@app.route('/upvoteProject/<current_user_id>/<project_id>/<like>', methods=['POST'])
+def upvote_project(current_user_id, project_id, like):
     like = like == 'True'
     project_id = ObjectId(project_id)
     try:
-        project_user = users_collection.find_one({'username': username})
+        project_user = users_collection.find_one({"projects._id": project_id})
+        project_user_id = ObjectId(project_user.get('_id'))
         if project_user:
             project = next((project for project in project_user.get('projects', []) if project['_id'] == project_id), None)
             if project:
@@ -892,7 +908,7 @@ def upvote_project(current_user_id, username, project_id, like):
                         user_upvote['like'] = like
                         user_upvote['date'] = datetime.now()
                         # update in database
-                        users_collection.update_one({ 'username': username, 'projects': { '$elemMatch': { '_id': project_id, 'projectUpvote.user': current_user_id }}},
+                        users_collection.update_one({ '_id': project_user_id, 'projects': { '$elemMatch': { '_id': project_id, 'projectUpvote.user': current_user_id }}},
                             { '$set': { 'projects.$.projectUpvote.$[elem]': user_upvote } },
                             array_filters=[{'elem.user': current_user_id}]
                         )
@@ -900,19 +916,19 @@ def upvote_project(current_user_id, username, project_id, like):
                     # need to delete the vote
                     else:
                         users_collection.update_one(
-                            {'username': username, 'projects._id': project_id},
+                            {'user': project_user_id, 'projects._id': project_id},
                             { "$pull": { "projects.$.projectUpvote": { "user": current_user_id } } }
                         )
                         return jsonify({"success": True, "message": "Vote successfully deleted"})
                 else:
-                    project_user_id = project_user.get('_id')
+                    
                     data = {
                         'user': current_user_id,
                         'date': datetime.now(),
                         'like': like
                     }
                     users_collection.update_one(
-                        {'_id': ObjectId(project_user_id), 'projects._id': project_id},
+                        {'_id': project_user_id, 'projects._id': project_id},
                         {'$push': {'projects.$.projectUpvote': data}}
                     )
                     return jsonify({"success": True, "message": "Vote added successfully"})
@@ -1090,7 +1106,7 @@ def get_comments(project_id):
     user = users_collection.find_one({"projects._id": project_id})
     if user:
         project = next((project for project in user.get('projects', []) if project['_id'] == project_id), None)
-        if project:
+        if project and 'comments' in project:
             return jsonify(project['comments']), 200
         else:
             return jsonify({'message': 'Project not found'}), 404
