@@ -1004,6 +1004,7 @@ div.first {
 
 .trackControls .properties input.slider {
   flex-grow: 1;
+  width: 0px;
 }
 
 .trackControls .properties button {
@@ -1035,7 +1036,7 @@ div.first {
   height: 70px;
   resize: vertical;
   overflow-y: auto;
-  color: var(--colour-text);
+  color: var(--colour-text)
 }
 .addComment::placeholder {
   color: var(--colour-interactable);
@@ -1284,7 +1285,6 @@ button#hamburger img {
   resize: vertical;
   overflow-y: auto;
   color: var(--colour-text);
-  z-index: 0;
 }
 .addComment::placeholder {
   color: var(--colour-interactable);

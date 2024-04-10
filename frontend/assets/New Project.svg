@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   version="1.2"
+   viewBox="0 0 56 43"
+   width="56"
+   height="43"
+   id="svg10"
+   sodipodi:docname="New Project.svg"
+   inkscape:version="1.1.2 (b8e25be833, 2022-02-05)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <defs
+     id="defs14" />
+  <sodipodi:namedview
+     id="namedview12"
+     pagecolor="#b1b1b1"
+     bordercolor="#999999"
+     borderopacity="1"
+     inkscape:pageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     showgrid="false"
+     inkscape:zoom="4.1802326"
+     inkscape:cx="-3.2294854"
+     inkscape:cy="20.453407"
+     inkscape:window-width="1920"
+     inkscape:window-height="1001"
+     inkscape:window-x="-9"
+     inkscape:window-y="-9"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg10" />
+  <title
+     id="title2">Shape 26</title>
+  <style
+     id="style4">
+		.s0 { fill: #ffffff } 
+		.s1 { fill: #000000 } 
+	</style>
+  <path
+     id="Shape 27"
+     class="s0"
+     d="M 6 0 C 3.2 0 1 2.2 1 5 L 1 11 L 1 38 C 1 40.8 3.2 43 6 43 L 24 43 L 51 43 C 53.8 43 56 40.8 56 38 L 56 11 C 56 8.2 53.8 6 51 6 L 29 6 L 29 5 C 29 2.2 26.8 0 24 0 L 6 0 z M 28.203125 13.521484 C 29.56045 13.521484 30.708984 14.669124 30.708984 16.130859 L 30.708984 22.291016 L 36.554688 22.291016 C 37.807603 22.291016 38.748047 23.23146 38.748047 24.484375 C 38.748047 25.737291 37.807603 26.677734 36.554688 26.677734 L 30.708984 26.677734 L 30.708984 33.671875 C 30.708984 35.0292 29.56045 36.177734 28.203125 36.177734 C 26.74139 36.177734 25.591797 35.0292 25.591797 33.671875 L 25.591797 26.677734 L 19.744141 26.677734 C 18.491225 26.677734 17.552734 25.737291 17.552734 24.484375 C 17.552734 23.23146 18.491225 22.291016 19.744141 22.291016 L 25.591797 22.291016 L 25.591797 16.130859 C 25.591797 14.669124 26.74139 13.521484 28.203125 13.521484 z " />
+  <metadata
+     id="metadata831">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:title>Shape 26</dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+</svg>

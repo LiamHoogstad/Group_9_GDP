@@ -32,7 +32,7 @@ export default {
 
 <style scoped>
 button#hamburger {
-  position: absolute;
+  position: fixed;
   top: 0;
   right: 0;
   margin: 0.4em 0 0 0;
@@ -48,7 +48,7 @@ button#hamburger img {
 }
 
 #drawer {
-  position: absolute;
+  position: fixed;
   overflow: hidden;
   text-align: right;
   top: 0;

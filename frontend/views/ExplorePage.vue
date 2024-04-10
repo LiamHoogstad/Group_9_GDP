@@ -284,7 +284,7 @@ export default {
       } else if (currentSort.value === "user") {
         sortedProjects.value.sort((a, b) => a.user.localeCompare(b.user));
       }
-
+      
       return sortedProjects.value;
     });
 
@@ -357,8 +357,8 @@ export default {
 
 <template>
   <div class="explorePage">
-    <h1>Explore</h1>
     <HamburgerMenu />
+    <h1>Explore</h1>
     <input
       type="text"
       v-model="searchQuery"
@@ -413,7 +413,9 @@ export default {
                 <h3>{{ project.description }}</h3>
                 <div>
                   <!-- Container for genres -->
-                  <div v-if="project.genres && project.genres.length > 0">
+                  <div v-if="project.genres && project.genres.length > 0 ||
+                            project.instruments && project.instruments.length > 0"
+                  >
                     <p
                       v-for="(genre, index) in project.genres"
                       :key="'genre-' + project._id + '-' + index"
@@ -421,12 +423,6 @@ export default {
                     >
                       {{ genre }}
                     </p>
-                  </div>
-
-                  <!-- Container for instruments -->
-                  <div
-                    v-if="project.instruments && project.instruments.length > 0"
-                  >
                     <p
                       v-for="(instrument, index) in project.instruments"
                       :key="'instrument-' + project._id + '-' + index"
@@ -462,7 +458,7 @@ export default {
             </div>
           </div>
           <div>
-            <p>{{ project.date }}</p>
+            <p>{{ project.date.substring(0,16) }}</p>
           </div>
         </div>
 
@@ -497,14 +493,14 @@ export default {
         </div>
         <button @click="playCombinedAudio(project._id, project)">
           <img
+            class="play"
             src="../assets/Play.svg"
             v-if="!isProjectPlaying(project._id)"
-            style="border: 1px solid red"
           />
           <img
+            class="play"
             src="../assets/Pause.svg"
             v-else
-            style="border: 1px solid green"
           />
         </button>
       </div>
@@ -515,7 +511,7 @@ export default {
 <style scoped>
 .explorePage {
   text-align: center;
-  min-height: 100vw;
+  min-height: 100vh;
   background-color: var(--colour-panel-soft);
   padding-bottom: 1em;
 }
@@ -554,11 +550,7 @@ h1 {
   display: flex;
   justify-content: center;
   width: 50%;
-  margin: 0 auto 0 auto;
-}
-
-.dropdowns .multiple-dropdown {
-  margin: 0.5em;
+  margin: 0 auto 0.5em auto;
 }
 
 .dropdowns .sort {
@@ -674,9 +666,8 @@ h1 {
 }
 
 .track .play {
-  margin: 0 auto 0 1em;
-  filter: invert(40%) sepia(42%) saturate(559%) hue-rotate(182deg)
-    brightness(100%) contrast(96%);
+  margin: 0 0.5em 0 0;
+  filter: invert(40%) sepia(42%) saturate(559%) hue-rotate(182deg) brightness(100%) contrast(96%);
 }
 
 .track .interact {
