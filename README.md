@@ -1,6 +1,6 @@
 # Group_9_GDP - Release 1
 
-This branch is our release 1 of our Group Design Project, MusiCollab. MusiCollab is aimed to be a collaborative music creation website where you can create and edit projects with friends and strangers by adding tracks, manipulating their audio settings and much more! We achieved all of goal for this release and an extra feature of a working custom volume slider.
+This branch is our release 1 of our Group Design Project, MusiCollab. MusiCollab is aimed to be a collaborative music creation website where you can create and edit projects with friends and strangers by adding tracks, manipulating their audio settings and much more! We achieved all of our goals for this release and an extra feature of a working custom volume slider.
 
 ---
 
@@ -145,6 +145,8 @@ Ensure the latest version of Node.js is installed on your device
   A detailed view for individual projects, containing specific functionalities for project management and collaboration.
 - Slider.vue
   A custom slider component, used within the application for settings such as volume control.
+- ExplorePage.vue
+  Allows users to find other projects that they can like, dislike, comment on, and contribute to.
 
 # Communication with Flask Backend:
 
