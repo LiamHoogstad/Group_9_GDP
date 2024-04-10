@@ -219,25 +219,22 @@ export default {
   <HamburgerMenu />
   <div class="profilePage">
     <div class="profileContainer">
-      <div class="profilePictureContainer">
-        <button @click="onClickFileInput">
-          <img
-            :src="profilePictureUrl"
-            alt="Profile Picture"
-            class="profilePicture"
-          />
-          <div class="hover">
-            <i class="fa-solid fa-pencil"></i>
-            Change Profile Picture
-          </div>
-        </button>
-        <input
-          type="file"
-          @change="uploadProfilePicture($event.target.files[0])"
-          style="display: none"
-          ref="fileInput"
+      <button class="profile-picture" @click="onClickFileInput">
+        <img
+          :src="profilePictureUrl"
+          alt="Profile Picture"
         />
-      </div>
+        <div class="hover">
+          <i class="fa-solid fa-pencil"></i>
+          Change Profile Picture
+        </div>
+      </button>
+      <input
+        type="file"
+        @change="uploadProfilePicture($event.target.files[0])"
+        style="display: none"
+        ref="fileInput"
+      />
       <div class="profilePageStatsContainer">
         <h1>{{ username }}</h1>
       </div>
@@ -298,7 +295,7 @@ export default {
           </div>
         </div>
         <div class="project addProject" @click="showAddProjectPopup = true">
-          <img class="add-icon" src="../assets/addFolder.png" alt="" />
+          <img src="../assets/New Project.svg"/>
           <p>Add Project</p>
         </div>
       </div>
@@ -327,26 +324,22 @@ export default {
   gap: 2em;
 }
 
-.profilePictureContainer {
-  width: 100%;
-  max-width: 300px;
-  text-align: center;
-}
-
-.profilePictureContainer button {
+button.profile-picture {
   border-radius: 100%;
+  max-width: 300px;
+  height: 300px;
   position: relative;
   overflow: hidden;
   box-shadow: 0 0.1em 0.2em 0.05em var(--colour-dropshadow);
 }
-
-.profilePictureContainer button img {
+button.profile-picture img {
   display: block;
+  overflow: hidden;
   width: 100%;
   height: 100%;
+  object-fit: cover;
 }
-
-.profilePictureContainer button .hover {
+button.profile-picture .hover {
   position: absolute;
   top: 0;
   bottom: 0;
@@ -357,7 +350,6 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  
   border-radius: 100%;
   color: var(--colour-background);
   background: var(--colour-text);
@@ -365,19 +357,11 @@ export default {
   transition: opacity 150ms;
   font-weight: 600;
 }
-.profilePictureContainer button .hover:hover {
+button.profile-picture .hover:hover {
   opacity: 60%;
 }
-
-.profilePictureContainer button .hover i {
+button.profile-picture .hover i {
   margin-right: 0.5em;
-}
-
-.profilePicture {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  align-items: center;
 }
 
 
@@ -389,11 +373,6 @@ export default {
   font-family: "Delta Gothic One";
   line-height: 0.8em;
   padding-bottom: 0.3em;
-}
-.separatorBar {
-  height: 5px;
-  width: 70%;
-  margin: 20px 0;
 }
 
 .projectGrid {
@@ -408,7 +387,7 @@ export default {
 .project {
   min-height: 150px;
   background-color: transparent;
-  border-radius: 0.78em;
+  border-radius: 1em;
   border: 3px dashed var(--colour-panel-hard);
   display: grid;
   grid-template-rows: auto;
@@ -418,6 +397,7 @@ export default {
   --tag-colour: var(--colour-background);
   --tag-bg-colour: var(--colour-panel-hard);
   --delete-display: none;
+  --svg-filter: invert(90%) sepia(97%) saturate(4765%) hue-rotate(212deg) brightness(84%) contrast(107%);
   text-align: center;
 }
 .project:hover {
@@ -428,6 +408,7 @@ export default {
   --tag-colour: var(--colour-text);
   --tag-bg-colour: var(--colour-background);
   --delete-display: inherit;
+  --svg-filter: none;
   transition: 0.2s ease-in;
 }
 .project button.delete {
@@ -438,6 +419,7 @@ export default {
   top: 0;
   width: 1.5em;
   height: 1.5em;
+  font-size: 1.1em;
   line-height: 0.8em;
   padding-bottom: 0.2em;
   border-radius: 100%;
@@ -450,8 +432,9 @@ export default {
 }
 
 .project h3 {
+  font-family: "Delta Gothic One";
   line-height: 1em;
-  font-weight: 700;
+  margin: 1.2em 0.25em 0 0.25em;
 }
 .project p.description {
   margin: 0.25em;
@@ -467,20 +450,22 @@ export default {
 .project .tags p {
   padding: 0 0.25em 0 0.25em;
   border-radius: 0.25em;
+  font-weight: 600;
   color: var(--tag-colour);
   background-color: var(--tag-bg-colour);
 }
 
-.addProject {
-  background-color: var(--colour-panel-hard);
-  cursor: pointer;
-  color: var(--colour-background);
+.addProject img {
+  filter: var(--svg-filter);
 }
 .addProject p {
   font-weight: 600;
 }
-.addProject .add-icon {
-  margin-top: 0.5em;
+.addProject .plus {
+  font-family: "Fredoka";
+  font-size: 4em;
+  line-height: 0.2em;
+  padding-bottom: 0.26em;
 }
 
 .project img {
@@ -511,5 +496,17 @@ export default {
 select[multiple] option:checked {
   background-color: var(--selected-color);
   color: rgb(188, 26, 26);
+}
+
+
+@media (max-width: 900px) {
+  .projectGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 550px) {
+  .projectGrid {
+    grid-template-columns: repeat(1, 1fr);
+  }
 }
 </style>
