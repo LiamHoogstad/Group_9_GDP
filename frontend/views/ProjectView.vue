@@ -958,6 +958,9 @@ export default {
                     class="delete"
                     title="Delete Track"
                     @click="deleteAudioFile(index)"
+                    :style="{
+                      pointerEvents: isLoadingAudio ? 'none' : 'auto',
+                    }"
                   >
                     <h2>x</h2>
                   </button>

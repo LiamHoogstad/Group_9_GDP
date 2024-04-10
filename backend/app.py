@@ -574,7 +574,7 @@ def update_audio_position(user_id, project_title, index, newPosition):
 
         print("MIDWAY 12312412")
         index = int(index)
-        newPosition = int(float(newPosition))
+        newPosition = float(newPosition)
 
 
         print("MIDWAY 1 !")
@@ -764,7 +764,7 @@ def stream_project_audios(projectId):
                 grid_out = grid_fs_bucket.open_download_stream(file_id)
                 audio_segment = AudioSegment.from_file(io.BytesIO(grid_out.read()), format="mp3")
                 
-                audioOffset = int(audio_file['Start_Position']) * 1000
+                audioOffset = audio_file['Start_Position'] * 1000
                 volume_adjustment = volume_to_decibels(audio_file['Volumes'])
 
                 if not audio_file.get('Mute', False):
