@@ -1004,6 +1004,7 @@ div.first {
 
 .trackControls .properties input.slider {
   flex-grow: 1;
+  width: 0px;
 }
 
 .trackControls .properties button {
