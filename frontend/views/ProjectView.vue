@@ -27,6 +27,8 @@ const areCommentsOpen = ref(false);
 let isOwnProfile = ref(true);
 const upvotes = ref(0);
 const downvotes = ref(0);
+const selectedInstruments = ref([]);
+const selectedGenres = ref([]);
 
 watch(
   audioFiles,
@@ -40,6 +42,68 @@ watch(
   },
   { deep: true }
 );
+
+const handleSelectedInstrumentsUpdate = async (updatedSelectedOptions) => {
+  const accessToken = localStorage.getItem("userToken");
+
+  let projectDetailsString = localStorage.getItem("projectDetails");
+  let projectDetails = JSON.parse(projectDetailsString);
+  let projectId = projectDetails._id;
+
+  if (accessToken) {
+    try {
+      // console.log(username, title);
+      await axios.put(
+        `http://127.0.0.1:5000/updateInstruments/${projectId}`,
+        {'instruments': updatedSelectedOptions.length > 0 ? updatedSelectedOptions.join(",") : " "},
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }
+      );   
+    } catch (error) {
+      console.error("Error voting on project:", error);
+    }
+  }
+  selectedInstruments.value = updatedSelectedOptions;
+};
+
+const handleSelectedGenresUpdate = async (updatedSelectedOptions) => {
+  const accessToken = localStorage.getItem("userToken");
+
+  let projectDetailsString = localStorage.getItem("projectDetails");
+  let projectDetails = JSON.parse(projectDetailsString);
+  let projectId = projectDetails._id;
+  if (accessToken) {
+    try {
+      // console.log(username, title);
+      await axios.put(
+        `http://127.0.0.1:5000/updateGenres/${projectId}`,
+        {'genres': updatedSelectedOptions.length > 0 ? updatedSelectedOptions.join(",") : " "},
+        {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }
+      );   
+    } catch (error) {
+      console.error("Error updating genre on project:", error);
+    }
+  }
+  selectedGenres.value = updatedSelectedOptions;
+};
+
+const getGenresAndInstruments = async () => {
+  const accessToken = localStorage.getItem("userToken");
+  const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
+  
+  let projectDetailsString = localStorage.getItem("projectDetails");
+  let projectDetails = JSON.parse(projectDetailsString);
+  const response = await axios.get(
+    `http://127.0.0.1:5000/getGenresAndInstruments/${projectDetails._id}`,
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+  let data = response.data;
+  selectedGenres.value = data.genres;
+  selectedInstruments.value = data.instruments;
+}
 
 const getVotes = async () => {
   const accessToken = localStorage.getItem("userToken");
@@ -348,6 +412,7 @@ onMounted(async () => {
 
 onMounted(() => {
   getVotes();
+  getGenresAndInstruments();
 });
 
 function updateVolume(newVolume) {
@@ -827,7 +892,55 @@ export default {
           <audio id="projectAudio" controls style="display: none"></audio>
         </div>
       </div>
-      <div class="right"></div>
+      <div class="centre">
+        <div class="likeDislike">
+          <button
+            @click="vote('True')"
+            class="like"
+          >
+            <img src="../assets/Like.svg" /> {{ upvotes }}
+          </button>
+          <button
+            @click="vote('False')"
+            class="dislike"
+          >
+            <img src="../assets/Dislike.svg" /> {{ downvotes }}
+          </button>
+        </div>
+      </div>
+      <div v-if="isOwnProfile" class="centre">
+        <MultipleDropdown
+          :options="genres"
+          valueName="Genres"
+          allowUpdates="True"
+          :alreadySelectedOptions="selectedGenres"
+          @update:selectedOptions="handleSelectedGenresUpdate"
+        />
+        <MultipleDropdown
+          :options="instruments"
+          valueName="Instruments"
+          allowUpdates="True"
+          :alreadySelectedOptions="selectedInstruments"
+          @update:selectedOptions="handleSelectedInstrumentsUpdate"
+        />
+      </div>
+      <div v-if="!isOwnProfile" class="centre">
+        <MultipleDropdown
+          :options="genres"
+          allowUpdates="False"
+          valueName="Genres"
+          :alreadySelectedOptions="selectedGenres"
+        />
+        <MultipleDropdown
+          :options="instruments"
+          allowUpdates="False"
+          valueName="Instruments"
+          :alreadySelectedOptions="selectedInstruments"
+        />
+      </div>
+      <div class="right">
+        <HamburgerMenu />
+      </div>
     </div>
     <div class="upload-area" style="text-align: center">
       <div class="first" style="margin-top: 20px">
