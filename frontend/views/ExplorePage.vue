@@ -546,10 +546,7 @@ h1 {
   display: flex;
   justify-content: center;
   width: 50%;
-  margin: 0 auto 0 auto;
-}
-
-.dropdowns .multiple-dropdown {
+  margin: 0 auto 0.5em auto;
 }
 
 .dropdowns .sort {
