@@ -892,22 +892,6 @@ export default {
           <audio id="projectAudio" controls style="display: none"></audio>
         </div>
       </div>
-      <div class="centre">
-        <div class="likeDislike">
-          <button
-            @click="vote('True')"
-            class="like"
-          >
-            <img src="../assets/Like.svg" /> {{ upvotes }}
-          </button>
-          <button
-            @click="vote('False')"
-            class="dislike"
-          >
-            <img src="../assets/Dislike.svg" /> {{ downvotes }}
-          </button>
-        </div>
-      </div>
       <div v-if="isOwnProfile" class="centre">
         <MultipleDropdown
           :options="genres"
