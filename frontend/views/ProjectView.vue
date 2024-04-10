@@ -43,7 +43,7 @@ watch(
 const getVotes = async () => {
   const accessToken = localStorage.getItem("userToken");
   const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
-  
+
   let projectDetailsString = localStorage.getItem("projectDetails");
   let projectDetails = JSON.parse(projectDetailsString);
   const response = await axios.get(
@@ -53,7 +53,7 @@ const getVotes = async () => {
   let data = response.data;
   upvotes.value = data.upvotes;
   downvotes.value = data.downvotes;
-}
+};
 
 const vote = async (like) => {
   const accessToken = localStorage.getItem("userToken");
@@ -71,18 +71,18 @@ const vote = async (like) => {
         {
           headers: { Authorization: `Bearer ${accessToken}` },
         }
-      );   
+      );
     } catch (error) {
       console.error("Error voting on project:", error);
     }
   }
   getVotes();
-}
+};
 
 const fetchComments = async () => {
   const accessToken = localStorage.getItem("userToken");
   const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
-  
+
   let projectDetailsString = localStorage.getItem("projectDetails");
   let projectDetails = JSON.parse(projectDetailsString);
 
@@ -102,7 +102,7 @@ const fetchComments = async () => {
 
   comments.value.forEach((c) => {
     // check if its the right user
-    c['canDelete'] = userId == c['user'];
+    c["canDelete"] = userId == c["user"];
 
     let seconds = Math.floor((now - new Date(c.date)) / 1000);
 
@@ -166,14 +166,11 @@ const deleteComment = async (id) => {
   let projectDetailsString = localStorage.getItem("projectDetails");
   let projectDetails = JSON.parse(projectDetailsString);
   let projectId = projectDetails._id;
-  await axios.delete(
-    `http://127.0.0.1:5000/deleteComment/${projectId}/${id}`,
-    {
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    }
-  );
+  await axios.delete(`http://127.0.0.1:5000/deleteComment/${projectId}/${id}`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
   comments.value = comments.value.filter((c) => c.id !== id);
 };
 
@@ -350,7 +347,7 @@ onMounted(async () => {
 
 onMounted(() => {
   getVotes();
-  });
+});
 
 function updateVolume(newVolume) {
   const volumeValue = newVolume / 100;
@@ -759,16 +756,10 @@ export default {
         </div>
       </div>
       <div class="likeDislike">
-        <button
-          @click="vote('True')"
-          class="like"
-        >
+        <button @click="vote('True')" class="like">
           <img src="../assets/Like.svg" /> {{ upvotes }}
         </button>
-        <button
-          @click="vote('False')"
-          class="dislike"
-        >
+        <button @click="vote('False')" class="dislike">
           <img src="../assets/Dislike.svg" /> {{ downvotes }}
         </button>
       </div>
@@ -891,6 +882,7 @@ export default {
                     :initOffset="audio.Start_Position"
                     :initTrackLength="180.0"
                     :initFileLength="10.0"
+                    :style="{ pointerEvents: isLoadingAudio ? 'none' : 'auto' }"
                   />
                 </template>
 
