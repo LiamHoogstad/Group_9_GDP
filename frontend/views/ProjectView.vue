@@ -1269,7 +1269,7 @@ button#hamburger img {
 
 .comments-area button.close-comments {
   font-family: "Fredoka";
-  position: absolute;
+  position: fixed;
   left: 0;
   border-radius: 0 0 1em 0;
 }
