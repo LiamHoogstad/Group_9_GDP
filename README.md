@@ -188,7 +188,7 @@ Ensure the latest version of Node.js is installed on your device
 
 ## Demonstration / Application Testing Purposes
 
-We would like to guide you through 2 processes for your assessment.
+We would like to guide you through 2 processes for logging in to your account.
 
 - 1. Existing user:
      On the landing page you will click on the page that allows you to SIGN IN.
@@ -200,6 +200,21 @@ We would like to guide you through 2 processes for your assessment.
      On the landing page you will click on the page that allows you to SIGN UP.
      Sign up with your own details ensuring a valid and unused email, password that is at least 8 characters long, has a number, capital letter and a special character (all passwords are hashed for privacy reasons), a username, and a DOB (must be over 18)
      Upon completion you will be brought to the profile page where you can customise your profile with your own profile picture, add your own projects, and add/upload some of your own audio files to the project you created. To test uploading audio files you can use your own mp3 files or you can use the mp3 files we have provided in the assets folder in frontend. Your signup information has all been saved to the database and where applicable the profile picture, audio files and project details are also all saved for future use so they can be played and streamed rather than locally.
+
+There are various pages in the MusiCollab application which can be used for various reasons:
+
+- 1. Profile Page:
+     The profile page of a user lists all the project that have been created by the user, or projects that the user is currently contributing on. It allows a user to “Add Project” to create new music projects with a specific title and description. When creating a new  project, the users can add tags for genres and instruments used, which will be linked to their project. The profile page is also personalized and has a feature where the users to change their profile pictures. The hamburger menu on the top right gives easy access to the Explore Page and Signing Out. 
+- 2. The Project Page:
+    The project page displays the specific music project that the user clicked into, whether their own or someone else's from the explore page. At the top left you can view the project name along with the instrument and genre tags for this project. If this is your own project, you can click on the project name and type to change it, additionally you can click on the dropdown "Instrument" and "Genre" menus to change the tags for your project. In the middle of the top bar, there is a play button that will play all of the tracks on the project. Underneath this is a master volume control. To the far right is a Hamburger menu that can be used to go back to your account, the explore page, or to logout. If this is your own project, you will be able to add new tracks using the "Add New Track" button. Once you upload the audio, the track will appear. On each track you have the ability adjust the specific track volume using the volume slider on that track, mute the track by clicking the small "M", as well as change when the track begins playing by dragging the offset left or right. However, if this is not your own project, you will not be able to change the specific track volume, mute, or change the offset. However, you will be able to click "Contribute" which makes a copy of this project that you can edit. At the bottom of the project page are an upvote and downvote for users to vote this project as well as a comments button. Clicking the comments button causes the comments section to popup, where you can post a comment. Users are able to delete their own comments. On the comments you can see the username, how long ago the comment was made, and the comment itself. By clicking the small "X" in the upper right of the comment section you can exit out. 
+- 3. The Explore Page:
+    The explore page displays the music projects of all the users of MusiColab. On this page, users can scroll through the projects and listen to them. There are features present such as a search bar at the top of the page for searching projects by title, filtering by genre and instrument, and sort by date. Users and click into the project which will bring them to the project page. There is also an option to contribute to a project. Clicking the contribute button will create a copy of the project under your own profile. Changes can then be made to this project. Users can like and dislike each project. The hamburger menu on the top right gives easy access to the User Account and Signing Out.
+
+Navigating MusiCollab:
+    To Navigate through the various pages through MusiCollab, you can use the 'Hamburger' menu button, which will be displayed on the top right of your screen. The hamburger presents you with options to go to the explore page, your profile page, and an option to sign out of your account
+    Naturally, clicking on various other items such as projects from the profile or explore page will bring you to those respective pages.
+
+
 
 Other Notes:
 
