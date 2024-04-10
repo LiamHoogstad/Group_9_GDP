@@ -865,7 +865,22 @@ export default {
     </div>
     <div id="ribbon">
       <div class="left">
-        <div class="dropdowns"></div>
+        <div class="dropdowns">
+          <MultipleDropdown
+            :options="genres"
+            valueName="Genres"
+            :allowUpdates="isOwnProfile ? 'True' : 'False'"
+            :alreadySelectedOptions="selectedGenres"
+            @update:selectedOptions="isOwnProfile ? handleSelectedGenresUpdate : ''"
+          />
+          <MultipleDropdown
+            :options="instruments"
+            valueName="Instruments"
+            :allowUpdates="isOwnProfile ? 'True' : 'False'"
+            :alreadySelectedOptions="selectedInstruments"
+            @update:selectedOptions="isOwnProfile ? handleSelectedGenresUpdate : ''"
+          />
+        </div>
         <input
           type="text"
           id="project_name"
@@ -891,36 +906,6 @@ export default {
 
           <audio id="projectAudio" controls style="display: none"></audio>
         </div>
-      </div>
-      <div v-if="isOwnProfile" class="centre">
-        <MultipleDropdown
-          :options="genres"
-          valueName="Genres"
-          allowUpdates="True"
-          :alreadySelectedOptions="selectedGenres"
-          @update:selectedOptions="handleSelectedGenresUpdate"
-        />
-        <MultipleDropdown
-          :options="instruments"
-          valueName="Instruments"
-          allowUpdates="True"
-          :alreadySelectedOptions="selectedInstruments"
-          @update:selectedOptions="handleSelectedInstrumentsUpdate"
-        />
-      </div>
-      <div v-if="!isOwnProfile" class="centre">
-        <MultipleDropdown
-          :options="genres"
-          allowUpdates="False"
-          valueName="Genres"
-          :alreadySelectedOptions="selectedGenres"
-        />
-        <MultipleDropdown
-          :options="instruments"
-          allowUpdates="False"
-          valueName="Instruments"
-          :alreadySelectedOptions="selectedInstruments"
-        />
       </div>
       <div class="right">
         <HamburgerMenu />
@@ -1304,24 +1289,21 @@ tr .trackPreview .editor {
   float: left;
 }
 
-#ribbon .dropdowns span {
-  font-weight: 600;
-  margin-left: 0.5em;
-  padding: 0 0.25em 0 0.25em;
-  border-radius: 0.25em;
-  cursor: pointer;
+#ribbon .dropdowns {
+  margin-left: 1em;
+  display: flex;
 }
-
-#ribbon .dropdowns span:hover {
-  background-color: var(--colour-interactable);
+#ribbon .dropdowns * {
+  margin-right: 0.5em;
+  display: flex;
 }
 
 input#project_name {
   font-family: "Delta Gothic One";
   width: 97%;
   font-size: 20pt;
-  margin: 0.55em 0 0 0.5em;
-  height: 1.1em;
+  margin: 0.25em 0 0 0.5em;
+  height: 1em;
   background-color: transparent;
   color: var(--colour-text);
   border-radius: 0.25em;
