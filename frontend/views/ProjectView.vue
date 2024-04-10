@@ -721,7 +721,9 @@ export default {
         <div class="second">
           <table>
             <tr v-for="(audio, index) in audioFiles" :key="index">
-              <td class="trackControls">
+              <td class="trackControls" :style="{
+                  paddingTop: isOwnProfile ? '' : '1em'
+                }">
                 <template v-if="isOwnProfile">
                   <button
                     class="delete"
@@ -731,7 +733,9 @@ export default {
                     <h2>x</h2>
                   </button>
                 </template>
-                <div class="properties">
+                <div class="properties" :style="{
+                  marginLeft: isOwnProfile ? '' : '2em'
+                }">
                   <template v-if="isOwnProfile">
                     <textarea
                       placeholder="Enter track name..."
