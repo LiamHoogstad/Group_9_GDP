@@ -17,11 +17,10 @@ export default {
       type: Array,
     }
   },
-
   data() {
     return {
       isDropdownOpen: false,
-      selectedOptions: this.alreadySelectedOptions ? this.alreadySelectedOptions.slice() : [],
+      selectedOptions: this.alreadySelectedOptions,
     };
   },
 

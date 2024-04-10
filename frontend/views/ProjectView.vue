@@ -872,14 +872,14 @@ export default {
             :options="genres"
             valueName="Genres"
             allowUpdates= "True"
-            :alreadySelectedOptions="selectedGenres.value"
+            :alreadySelectedOptions="selectedGenres"
             @update:selectedOptions="handleSelectedGenresUpdate"
           />
           <MultipleDropdown
             :options="instruments"
             valueName="Instruments"
             allowUpdates= "True"
-            :alreadySelectedOptions="selectedInstruments.value"
+            :alreadySelectedOptions="selectedInstruments"
             @update:selectedOptions="handleSelectedInstrumentsUpdate"
           />
         </div>
