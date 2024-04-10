@@ -32,7 +32,7 @@ app.config['JWT_SECRET_KEY'] = generate_secret_key()
 jwt = JWTManager(app)
 
 # Load environment variables
-load_dotenv()
+load_dotenv(override=True)
 
 # MongoDB setup
 client = MongoClient(os.getenv("MONGO_URI"), server_api=ServerApi('1'))

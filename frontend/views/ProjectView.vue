@@ -862,7 +862,7 @@ export default {
                       /><button
                         v-if="isLoadingAudio"
                         title="Change Track"
-                        style="cursor: not-allowed"
+                        style="display: none"
                       >
                         C
                       </button>
@@ -870,6 +870,7 @@ export default {
                         v-else
                         title="Change Track"
                         @click="() => triggerFileInput(index)"
+                        style="display: none"
                       >
                         C
                       </button>
@@ -923,10 +924,10 @@ export default {
           style="margin-top: 20px; cursor: not-allowed"
           disabled
         >
-          Add Audio File
+          Add New Track
         </button>
         <button v-else @click="triggerNewFileInput" style="margin-top: 20px">
-          Add Audio File
+          Add New Track
         </button> </template
       ><template v-else
         ><p v-if="isLoadingAudio" style="text-align: center; margin-top: 20px">
