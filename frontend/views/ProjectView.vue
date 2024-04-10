@@ -1296,7 +1296,7 @@ tr .trackPreview .editor {
 }
 
 #ribbon .dropdowns {
-  margin-left: 1em;
+  margin-left: 0.5em;
   display: flex;
 }
 #ribbon .dropdowns * {
