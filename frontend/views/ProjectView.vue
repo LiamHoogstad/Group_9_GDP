@@ -678,6 +678,51 @@ export default {
 
 <template>
   <div class="projectPage">
+    <button class="comments-button" @click="()=>{ areCommentsOpen = true; }">comments</button>
+    <div class="comments-area" :style="{
+      maxHeight: areCommentsOpen ? '15em' : '0',
+      boxShadow: areCommentsOpen ? '0 0 0.5em var(--colour-dropshadow)' : 'none',
+      zIndex: areCommentsOpen ? '' : '-1'
+    }">
+      <button class="close-comments" @click="()=>{ areCommentsOpen = false; } " :style="{
+        display: areCommentsOpen ? '' : 'none',
+      }">x</button>
+      <div
+        class="comments-box"
+        style="
+          margin-top: 10px;
+          justify-content: center;
+          display: flex;
+          align-items: center;
+        "
+      >
+        <textarea
+          type="text"
+          v-model="comment"
+          class="addComment"
+          placeholder="Comment..."
+        />
+        <button @click="submitComment">Post</button>
+      </div>
+      <div>
+        <ul>
+          <div class="comments" v-for="com in comments" :key="com._id">
+            <div class="box">
+              <h3 class="user" style="font-weight: bold">{{ com.username }}</h3>
+            </div>
+            <div class="box">
+              <h3 class="user" style="font-weight: bold">{{ com.date }}</h3>
+            </div>
+            <div class="box">
+              <h3 class="description">{{ com.comment }}</h3>
+            </div>
+            <button v-if="com.canDelete" @click="deleteComment(com.id)">
+              Delete
+            </button>
+          </div>
+        </ul>
+      </div>
+    </div>
     <div id="ribbon">
       <div class="left">
         <div class="dropdowns">
@@ -867,16 +912,16 @@ export default {
         </p>
         <button
           v-if="isLoadingAudio"
-          style="margin-top: 20px; cursor: not-allowed"
+          style="margin: 20px; cursor: not-allowed"
           disabled
         >
           Add Audio File
         </button>
-        <button v-else @click="triggerNewFileInput" style="margin-top: 20px">
+        <button v-else @click="triggerNewFileInput" style="margin: 20px">
           Add Audio File
         </button> </template
       ><template v-else
-        ><p v-if="isLoadingAudio" style="text-align: center; margin-top: 20px">
+        ><p v-if="isLoadingAudio" style="text-align: center; margin: 20px">
           Please wait for files to load...
         </p>
         <button
@@ -890,57 +935,20 @@ export default {
           Contribute
         </button></template
       >
-      <button class="comments-button" @click="()=>{ areCommentsOpen = true; }">comments</button>
-
-      <div class="comments-area" :style="{
-        maxHeight: areCommentsOpen ? '15em' : '0',
-        boxShadow: areCommentsOpen ? '0 0 0.5em var(--colour-dropshadow)' : 'none',
-      }">
-        <button class="close-comments" @click="()=>{ areCommentsOpen = false; }">x</button>
-        <div
-          class="comments-box"
-          style="
-            margin-top: 10px;
-            justify-content: center;
-            display: flex;
-            align-items: center;
-          "
-        >
-          <textarea
-            type="text"
-            v-model="comment"
-            class="addComment"
-            placeholder="Comment..."
-          />
-          <button @click="submitComment">Post</button>
-        </div>
-        <div>
-          <ul>
-            <div class="comments" v-for="com in comments" :key="com._id">
-              <div class="box">
-                <h3 class="user" style="font-weight: bold">{{ com.username }}</h3>
-              </div>
-              <div class="box">
-                <h3 class="user" style="font-weight: bold">{{ com.date }}</h3>
-              </div>
-              <div class="box">
-                <h3 class="description">{{ com.comment }}</h3>
-              </div>
-              <button v-if="com.canDelete" @click="deleteComment(com.id)">
-                Delete
-              </button>
-            </div>
-          </ul>
-        </div>
-      </div>
     </div>
     <HamburgerMenu />
   </div>
 </template>
 
 <style scoped>
+#app {
+  overflow: hidden !important;
+}
+.projectPage {
+  /* min-height: 100vh; */
+}
 .upload-area {
-  contain: size;
+  margin-top: 6em;
 }
 
 table {
@@ -1093,11 +1101,15 @@ tr .trackPreview .editor {
 }
 
 #ribbon {
+
   width: 100%;
-  position: sticky;
+  position: fixed;
+  top: 0;
   contain: layout;
   background-color: var(--colour-panel-soft);
+  box-shadow: 0 0 0.5em var(--colour-dropshadow);
   padding: 0.5em 0 0 0;
+  z-index: 5;
 }
 
 #ribbon .left {
@@ -1254,8 +1266,8 @@ button#hamburger img {
 }
 
 .comments-area {
-  position: absolute;
-  overflow: scroll;
+  position: fixed;
+  overflow-y: scroll;
   width: 100%;
   bottom: 0;
   padding-bottom: 1em;
@@ -1265,7 +1277,7 @@ button#hamburger img {
 }
 
 .comments-button {
-  position: absolute;
+  position: fixed;
   bottom: 0;
   right: 0;
   margin: 1em;
