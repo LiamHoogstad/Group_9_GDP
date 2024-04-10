@@ -893,6 +893,7 @@ def get_votes(project_id):
 @app.route('/upvoteProject/<current_user_id>/<project_id>/<like>', methods=['POST'])
 def upvote_project(current_user_id, project_id, like):
     like = like == 'True'
+    print(current_user_id, project_id, like)
     project_id = ObjectId(project_id)
     try:
         project_user = users_collection.find_one({"projects._id": project_id})
@@ -1106,8 +1107,11 @@ def get_comments(project_id):
     user = users_collection.find_one({"projects._id": project_id})
     if user:
         project = next((project for project in user.get('projects', []) if project['_id'] == project_id), None)
-        if project and 'comments' in project:
-            return jsonify(project['comments']), 200
+        if project:
+            if 'comments' in project:
+                return jsonify(project['comments']), 200
+            else:
+                return jsonify({'message': 'No comments'}), 404
         else:
             return jsonify({'message': 'Project not found'}), 404
     return jsonify({'message': 'User not found'}), 404
@@ -1151,26 +1155,73 @@ def delete_comment(project_id, comment_id):
     except Exception as e:
         return jsonify({'message': 'Error deleting comment: ' + str(e)}), 500
 
-@app.route('/updateGenres/<user_id>/<project_title>', methods=['POST'])
-def update_genres(user_id, project_title):
-    data = request.json
-    user = users_collection.find_one({"_id": ObjectId(user_id)})
-    project_title_decoded = project_title
-    project = next((project for project in user.get('projects', []) if project['title'] == project_title_decoded), None)
-    genres = project.get('genres', [])
+@app.route('/getGenresAndInstruments/<project_id>', methods=['GET'])
+def get_genres_and_instruments(project_id):
+    project_id = ObjectId(project_id)
+    user = users_collection.find_one({"projects._id": project_id})
+    if user:
+        project = next((project for project in user.get('projects', []) if project['_id'] == project_id), None)
+        if project and 'genres' in project and 'instruments' in project:
+            data = {'genres': project.get('genres', []), 'instruments': project.get('instruments', [])}
+            return jsonify(data), 200
+        else:
+            return jsonify({'message': 'Project not found'}), 404
+    return jsonify({'message': 'User not found'}), 404
 
-    # Update project document with new audio file ID
-    users_collection.update_one(
-        {'_id': ObjectId(user_id), 'projects.title': project_title},
-        {'$set': {f'projects': {'audioFileId': new_file_id, 'audioFilename': filename}}}
-    )
-
-    # update in database
-    users_collection.update_one({ '_id': ObjectId(user_id), 'projects': { '$elemMatch': { 'id': project_id, 'projectUpvote.user': current_user_id }}},
-        { '$set': { 'projects.$.projectUpvote.$[elem]': user_upvote } },
-        array_filters=[{'elem.user': current_user_id}]
-    )
-    return jsonify({"success": True, "message": "Vote successfully changed"})
+@app.route('/updateGenres/<project_id>', methods=['PUT'])
+def update_genres(project_id):
+    try:
+        project_id = ObjectId(project_id)
+        user = users_collection.find_one({"projects._id": project_id})
+        
+        if not user:
+            return jsonify({"success": False, "message": "User not found"}), 404
+        data = request.json
+        # Check and split instruments if provided and not empty
+        if data and data.get('genres'):
+            if data.get('genres') == '':
+                genres = []
+            else:
+                print(data.get('genres'))
+                genres = [genre.strip() for genre in data.get('genres').split(',')]
+        else:
+            return jsonify({"success": False, "message": "Invalid data format or missing genres"}), 400
+        
+        users_collection.update_one(
+            {'_id': ObjectId(user.get('_id')), 'projects._id': project_id},
+            {'$set': {'projects.$.genres': genres}}
+        )
+        return jsonify({"success": True, "message": "Genres successfully changed"})
     
+    except Exception as e:
+        return jsonify({"success": False, "message": "Error updating genres: " + str(e)}), 500
+
+@app.route('/updateInstruments/<project_id>', methods=['PUT'])
+def update_instruments(project_id):
+    try:
+        project_id = ObjectId(project_id)
+        user = users_collection.find_one({"projects._id": project_id})
+        
+        if not user:
+            return jsonify({"success": False, "message": "User not found"}), 404
+        data = request.json
+        # Check and split instruments if provided and not empty
+        if data and data.get('instruments'):
+            if data.get('instruments') == '':
+                instruments = []
+            else:
+                instruments = [instrument.strip() for instrument in data.get('instruments').split(',')]
+        else:
+            return jsonify({"success": False, "message": "Invalid data format or missing instruments"}), 400
+        
+        users_collection.update_one(
+            {'_id': ObjectId(user.get('_id')), 'projects._id': project_id},
+            {'$set': {'projects.$.instruments': instruments}}
+        )
+        return jsonify({"success": True, "message": "Instruments successfully changed"})
+    
+    except Exception as e:
+        return jsonify({"success": False, "message": "Error updating instruments: " + str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True)

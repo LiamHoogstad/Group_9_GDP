@@ -9,13 +9,19 @@ export default {
       type: String,
       required: true,
     },
+    allowUpdates: {
+      type: Boolean,
+      required: true,
+    },
+    alreadySelectedOptions: {
+      type: Array,
+    }
   },
 
   data() {
     return {
       isDropdownOpen: false,
-      selectedOptions: [],
-      // selectedOptions: alreadySelectedOptions ? alreadySelectedOptions.slice() : [],
+      selectedOptions: this.alreadySelectedOptions ? this.alreadySelectedOptions.slice() : [],
     };
   },
 
@@ -43,7 +49,7 @@ export default {
     },
     
     toggleOption(optionValue) {
-      if (this.isDropdownOpen) {
+      if (this.isDropdownOpen && this.allowUpdates) {
         if (this.selectedOptions.includes(optionValue)) {
           this.selectedOptions = this.selectedOptions.filter(option => option !== optionValue);
         } else {

@@ -302,12 +302,14 @@ export default {
             <MultipleDropdown
               :options="genres"
               valueName="Genres"
+              :allowUpdates="True"
               @update:selectedOptions="handleSelectedGenresUpdate"
             />
 
             <MultipleDropdown
               :options="instruments"
               valueName="Instruments"
+              :allowUpdates="True"
               @update:selectedOptions="handleSelectedInstrumentsUpdate"
             />
 
