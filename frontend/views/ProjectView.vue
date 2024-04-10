@@ -23,6 +23,7 @@ const isLoadingAudio = ref(true);
 const trackVolumes = [20, 40, 60, 100];
 const trackStartPositions = [0, 0, 0, 0];
 const newCommentText = ref("");
+const areCommentsOpen = ref(false);
 let isOwnProfile = ref(true);
 
 watch(
@@ -713,7 +714,6 @@ export default {
         </div>
       </div>
       <div class="right">
-        <HamburgerMenu />
       </div>
     </div>
     <div class="upload-area" style="text-align: center">
@@ -886,45 +886,51 @@ export default {
           Contribute
         </button></template
       >
-      <div class="separatorLine"></div>
-      <div style="margin-top: 50px">
-        <h2 style="font-family: 'Delta Gothic One'">Comments</h2>
-      </div>
-      <div
-        style="
-          margin-top: 10px;
-          justify-content: center;
-          display: flex;
-          align-items: center;
-        "
-      >
-        <textarea
-          type="text"
-          v-model="comment"
-          class="addComment"
-          placeholder="Comment..."
-        />
-        <button @click="submitComment">Post</button>
-      </div>
-      <div>
-        <ul>
-          <div class="comments" v-for="com in comments" :key="com._id">
-            <div class="box">
-              <h3 class="user" style="font-weight: bold">{{ com.username }}</h3>
+      <button class="comments-button" @click="()=>{ areCommentsOpen = true; }">comments</button>
+
+      <div class="comments-area" :style="{
+        maxHeight: areCommentsOpen ? '15em' : '0',
+        boxShadow: areCommentsOpen ? '0 0 0.5em var(--colour-dropshadow)' : 'none',
+      }">
+        <button class="close-comments" @click="()=>{ areCommentsOpen = false; }">x</button>
+        <div
+          class="comments-box"
+          style="
+            margin-top: 10px;
+            justify-content: center;
+            display: flex;
+            align-items: center;
+          "
+        >
+          <textarea
+            type="text"
+            v-model="comment"
+            class="addComment"
+            placeholder="Comment..."
+          />
+          <button @click="submitComment">Post</button>
+        </div>
+        <div>
+          <ul>
+            <div class="comments" v-for="com in comments" :key="com._id">
+              <div class="box">
+                <h3 class="user" style="font-weight: bold">{{ com.username }}</h3>
+              </div>
+              <div class="box">
+                <h3 class="user" style="font-weight: bold">{{ com.date }}</h3>
+              </div>
+              <div class="box">
+                <h3 class="description">{{ com.comment }}</h3>
+              </div>
+              <button v-if="com.canDelete" @click="deleteComment(com.id)">
+                Delete
+              </button>
             </div>
-            <div class="box">
-              <h3 class="user" style="font-weight: bold">{{ com.date }}</h3>
-            </div>
-            <div class="box">
-              <h3 class="description">{{ com.comment }}</h3>
-            </div>
-            <button v-if="com.canDelete" @click="deleteComment(com.id)">
-              Delete
-            </button>
-          </div>
-        </ul>
+          </ul>
+        </div>
       </div>
     </div>
+    <HamburgerMenu />
   </div>
 </template>
 
@@ -1015,30 +1021,6 @@ div.first {
   line-height: 0.3em;
   font-weight: 600;
   background-color: var(--colour-background);
-  color: var(--colour-interactable);
-}
-
-.addComment {
-  width: 50%;
-  padding: 0.5em 2em 0.5em 2em;
-  border: 0px solid var(--colour-interactable);
-  border-radius: 0.5em;
-  flex: 0.5;
-  margin-top: 1em;
-  background-image: url("../assets/comment.png");
-  background-repeat: no-repeat;
-  background-position: 5px 20%;
-  background-size: 20px 20px;
-  background-color: var(--colour-panel-soft);
-  margin-bottom: 1em;
-  font-size: medium;
-  outline: none;
-  height: 70px;
-  resize: vertical;
-  overflow-y: auto;
-  color: var(--colour-text)
-}
-.addComment::placeholder {
   color: var(--colour-interactable);
 }
 
@@ -1266,8 +1248,36 @@ button#hamburger img {
   background-color: var(--colour-interactable);
   border-radius: 5em 0 0 5em;
 }
+
+.comments-area {
+  position: absolute;
+  overflow: scroll;
+  width: 100%;
+  bottom: 0;
+  padding-bottom: 1em;
+  background-color: var(--colour-background);
+  border-radius: 1em;
+  transition: all 100ms;
+}
+
+.comments-button {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  margin: 1em;
+}
+
+.comments-area button.close-comments {
+  font-family: "Fredoka";
+  position: absolute;
+  left: 0;
+  border-radius: 0 0 1em 0;
+}
+
 .addComment {
   width: 50%;
+  height: 4em;
+  resize: none;
   padding: 0.5em 2em 0.5em 2em;
   border: 0px solid var(--colour-interactable);
   border-radius: 0.5em;
@@ -1281,13 +1291,17 @@ button#hamburger img {
   margin-bottom: 1em;
   font-size: medium;
   outline: none;
-  height: 70px;
   resize: vertical;
   overflow-y: auto;
   color: var(--colour-text);
 }
 .addComment::placeholder {
   color: var(--colour-interactable);
+}
+.comments-box button {
+  margin: 1em 0 0 0.5em;
+  height: calc(4em);
+  align-self: flex-start;
 }
 
 .comments {
@@ -1312,7 +1326,7 @@ button#hamburger img {
   position: relative;
   width: 90%;
   left: 5%;
-  height: 10px;
+  height: 0.5em;
   background-color: #77afff;
   border-radius: 10px;
   margin-top: 3vh;
