@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg
+   version="1.2"
+   viewBox="0 0 22 31"
+   width="22"
+   height="31"
+   id="svg9"
+   sodipodi:docname="Dislike.svg"
+   inkscape:version="1.1.2 (b8e25be833, 2022-02-05)"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:cc="http://creativecommons.org/ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <defs
+     id="defs13" />
+  <sodipodi:namedview
+     id="namedview11"
+     pagecolor="#2b2b2b"
+     bordercolor="#999999"
+     borderopacity="1"
+     inkscape:pageshadow="0"
+     inkscape:pageopacity="0"
+     inkscape:pagecheckerboard="0"
+     showgrid="false"
+     inkscape:zoom="16.400315"
+     inkscape:cx="13.505838"
+     inkscape:cy="16.55456"
+     inkscape:window-width="1920"
+     inkscape:window-height="1001"
+     inkscape:window-x="-9"
+     inkscape:window-y="-9"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="svg9" />
+  <title
+     id="title2">Like-svg</title>
+  <style
+     id="style4">
+		.s0 { fill: #ffffff } 
+	</style>
+  <path
+     style="fill:#ffffff;stroke:none;stroke-width:1px;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;fill-opacity:1"
+     d="m 20.436718,16.196649 c 0,0 -8.132453,12.882324 -8.772685,13.720722 -0.525904,0.746937 -1.299372,1.187605 -2.5666756,0.809181 C 6.6580082,29.998147 10.77886,18.611113 10.77886,18.611113 Z"
+     id="path515"
+     sodipodi:nodetypes="ccscc" />
+  <path
+     id="Shape 25"
+     class="s0"
+     d="m 0.15243609,13.985244 c -0.60974437,2.830487 2.04756391,5 4.84756391,5 h 11 c 2.8,0 5,-2.2 5,-5 l 1,-9.0000002 c 0,-2.8 -2.2,-5.00000004 -5,-5.00000004 H 8 c -2.8,0 -4.725615,2.01707704 -5.5182827,4.90853804 z"
+     sodipodi:nodetypes="cssccsscc"
+     style="fill:#ffffff;fill-opacity:1" />
+  <metadata
+     id="metadata22">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:title>Like-svg</dc:title>
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+</svg>

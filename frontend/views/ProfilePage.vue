@@ -3,30 +3,24 @@ import { ref, onMounted } from "vue";
 import axios from "axios";
 import blankProfilePicture from "../assets/blankProfilePicture.png";
 import { useRouter } from "vue-router";
+import { genres, instruments } from "../assets/globalVariables.js";
+import MultipleDropdown from "../components/MultipleDropdown.vue";
+import HamburgerMenu from "../components/HamburgerMenu.vue";
 
 export default {
   name: "ProfilePage",
-
   setup() {
     const username = ref("Loading...");
     const showAddProjectPopup = ref(false);
     const newProjectTitle = ref("");
     const newProjectDescription = ref("");
-    const newProjectGenre = ref("");
     const projects = ref([]);
     const profilePictureUrl = ref(blankProfilePicture);
     const fileInput = ref(null);
     const router = useRouter();
     const onClickFileInput = () => fileInput.value.click();
-    const genres = [
-            { value: 'Pop', label: 'Pop' },
-            { value: 'Jazz', label: 'Jazz' },
-            { value: 'Funk', label: 'Funk' },
-          ]
-    const sortedGenres = genres.sort((a, b) => {
-      return a.label.localeCompare(b.label);
-    });
-
+    const selectedInstruments = ref([]);
+    const selectedGenres = ref([]);
     const fetchProfilePicture = async () => {
       const accessToken = localStorage.getItem("userToken");
       if (!accessToken) {
@@ -118,41 +112,107 @@ export default {
     onMounted(async () => {
       await fetchUsername();
     });
-
     const addProject = () => {
+      let max =
+        projects.value.length > 0
+          ? projects.value.reduce(
+              (max, proj) =>
+                parseInt(proj.id) > max ? parseInt(proj.id) : max,
+              parseInt(projects.value[0].id)
+            )
+          : 0;
       const newProject = {
-        id: projects.value.length + 1,
+        id: max + 1,
         title: newProjectTitle.value,
         description: newProjectDescription.value,
-        genre: newProjectGenre.value,
+        genres: selectedGenres.value.join(","),
+        instruments: selectedInstruments.value.join(","),
       };
       projects.value.push(newProject);
       newProjectTitle.value = "";
       newProjectDescription.value = "";
-      newProjectGenre.value = "";
+      selectedGenres.value = [];
       showAddProjectPopup.value = false;
-
+      selectedInstruments.value = [];
       addProjectToDB(newProject);
     };
     const addProjectToDB = async (project) => {
       const accessToken = localStorage.getItem("userToken");
+      const userId = JSON.parse(atob(accessToken.split(".")[1])).sub;
       try {
-        await axios.post("http://127.0.0.1:5000/addProject", project, {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
+        await axios.post(
+          `http://127.0.0.1:5000/addProject/${userId}`,
+          project,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
         console.log("Project added successfully");
+        await fetchUsername();
       } catch (error) {
         console.error("Error adding project:", error);
       }
     };
-    const clickProject = async (project) => {
+
+    const handleSelectedInstrumentsUpdate = async (updatedSelectedOptions) => {
+      selectedInstruments.value = updatedSelectedOptions;
+    };
+
+    const handleSelectedGenresUpdate = async (updatedSelectedOptions) => {
+      selectedGenres.value = updatedSelectedOptions;
+    };
+    const deleteProject = async (project) => {
+      // Confirm deletion
+      if (
+        !confirm(
+          `Are you sure you want to delete the project "${project.title}"?`
+        )
+      ) {
+        return;
+      }
+      const accessToken = localStorage.getItem("userToken");
+      const projectId =
+        typeof project._id === "object" && project._id.$oid
+          ? project._id.$oid
+          : project._id; // Adjusted to get projectId
+
       try {
-        router.push({ name: "ProjectView", params: { title: project.title } });
+        await axios.delete(
+          `http://127.0.0.1:5000/deleteProject/${encodeURIComponent(
+            projectId
+          )}`, // Use projectId in the URL
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+        console.log("Project deleted successfully");
+        // Assuming fetchUsername fetches the updated list of projects
+        await fetchUsername();
+      } catch (error) {
+        console.error(
+          "Error deleting the project:",
+          error.response ? error.response.data : error
+        );
+      }
+    };
+    const clickProject = async (projectDetails) => {
+      try {
+        console.log("This is what project should be\n" + projectDetails);
+        localStorage.setItem("projectDetails", JSON.stringify(projectDetails));
+        setTimeout(() => {
+          router.push({
+            name: "ProjectView",
+            params: { title: projectDetails.title },
+          });
+        }, 1000);
+
         console.log("Project opened successfully");
       } catch (error) {
-        console.error("Error adding project:", error);
+        console.error("Error opening project:", error);
       }
     };
 
@@ -163,9 +223,8 @@ export default {
       showAddProjectPopup,
       newProjectTitle,
       newProjectDescription,
-      newProjectGenre,
-      genres,
-      sortedGenres,
+      genres: genres,
+      instruments: instruments,
       onClickFileInput,
       fileInput,
       profilePictureUrl,
@@ -174,32 +233,42 @@ export default {
       clickProject,
       addProjectToDB,
       fetchUsername,
+      selectedGenres,
+      selectedInstruments,
+      handleSelectedInstrumentsUpdate,
+      handleSelectedGenresUpdate,
+      deleteProject,
     };
   },
+  components: { MultipleDropdown, HamburgerMenu },
 };
 </script>
 
 <template>
+  <!-- Fontawesome CDN Link -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.1.1/css/all.min.css"
+  />
+  <HamburgerMenu />
   <div class="profilePage">
     <div class="profileContainer">
-      <div class="profilePictureContainer">
-        <img
-          :src="profilePictureUrl"
-          alt="Profile Picture"
-          class="profilePicture"
-        />
-        <input
-          type="file"
-          @change="uploadProfilePicture($event.target.files[0])"
-          style="display: none"
-          ref="fileInput"
-        />
-        <v-btn @click="onClickFileInput">Change Profile Picture</v-btn>
-      </div>
+      <button class="profile-picture" @click="onClickFileInput">
+        <img :src="profilePictureUrl" alt="Profile Picture" />
+        <div class="hover">
+          <i class="fa-solid fa-pencil"></i>
+          Change Profile Picture
+        </div>
+      </button>
+      <input
+        type="file"
+        @change="uploadProfilePicture($event.target.files[0])"
+        style="display: none"
+        ref="fileInput"
+      />
       <div class="profilePageStatsContainer">
         <h1>{{ username }}</h1>
       </div>
-      <div class="separatorBar"></div>
       <div class="projectGrid">
         <div v-if="showAddProjectPopup" class="addProjectPopup">
           <div class="popupContent">
@@ -223,17 +292,21 @@ export default {
                 border: 2px dashed var(--colour-panel-hard);
               "
             ></textarea>
-            <div class="form-inline justify-content-left">
-              <label class="mr-2" for="projectGenre">Genre:</label>
-              <select v-model="newProjectGenre" class="form-control mt-2" style="
-                border-radius: 5px;
-                border: 2px dashed var(--colour-panel-hard);
-              ">
-              <option v-for="(option, index) in sortedGenres" :key="index" :value="option.value">
-                {{ option.label }}
-              </option>
-            </select>
-            </div>  
+
+            <MultipleDropdown
+              :options="genres"
+              valueName="Genres"
+              allowUpdates="True"
+              @update:selectedOptions="handleSelectedGenresUpdate"
+            />
+
+            <MultipleDropdown
+              :options="instruments"
+              valueName="Instruments"
+              allowUpdates="True"
+              @update:selectedOptions="handleSelectedInstrumentsUpdate"
+            />
+
             <div class="buttonContainer">
               <button @click="addProject">Add Project</button>
               <button @click="showAddProjectPopup = false">Cancel</button>
@@ -246,14 +319,33 @@ export default {
           class="project"
           @click="clickProject(project)"
         >
+          <button class="delete" @click.stop="deleteProject(project)">x</button>
           <h3>{{ project.title }}</h3>
           <p>{{ project.description }}</p>
-          <p>{{ project.genre }}</p>
+          <div class="tags" v-if="
+              (Array.isArray(project.genres) && project.genres.length > 0) ||
+              (Array.isArray(project.instruments) &&
+                project.instruments.length > 0)
+            "
+          >
+            <p
+              v-for="(genre, index) in project.genres"
+              :key="'genre-' + index"
+              class="genre"
+            >
+              {{ genre }}
+            </p>
+            <p
+              v-for="(instrument, index) in project.instruments"
+              :key="'instrument-' + index"
+              class="genre"
+            >
+              {{ instrument }}
+            </p>
+          </div>
         </div>
         <div class="project addProject" @click="showAddProjectPopup = true">
-          <h3>
-            <span><img src="../assets/addFolder.png" alt="" /></span>
-          </h3>
+          <img src="../assets/New Project.svg" />
           <p>Add Project</p>
         </div>
       </div>
@@ -275,48 +367,61 @@ export default {
 
 .profileContainer {
   width: 70%;
-  padding: 20px;
+  margin-top: 2em;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 20px;
+  gap: 2em;
 }
 
-.profilePictureContainer {
-  width: 100%;
-  max-width: 300px;
-  text-align: center;
-  margin-bottom: 20px;
-}
-
-.profilePictureContainer button {
-  padding: 10px 20px;
-  margin-top: 20px;
-}
-
-.profilePicture {
-  width: 100%;
+button.profile-picture {
+  border-radius: 100%;
   max-width: 300px;
   height: 300px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 0.1em 0.2em 0.05em var(--colour-dropshadow);
+}
+button.profile-picture img {
+  display: block;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+button.profile-picture .hover {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 100%;
+  width: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
+  border-radius: 100%;
+  color: var(--colour-background);
+  background: var(--colour-text);
+  opacity: 0%;
+  transition: opacity 150ms;
+  font-weight: 600;
 }
-
-.profilePictureContainer img {
-  max-width: 100%;
-  max-height: 100%;
-  border-radius: 50%;
+button.profile-picture .hover:hover {
+  opacity: 60%;
+}
+button.profile-picture .hover i {
+  margin-right: 0.5em;
 }
 
 .profilePageStatsContainer {
   width: 100%;
   text-align: center;
 }
-.separatorBar {
-  height: 5px;
-  width: 70%;
-  margin: 20px 0;
+.profilePageStatsContainer h1 {
+  font-family: "Delta Gothic One";
+  line-height: 0.8em;
+  padding-bottom: 0.3em;
 }
 
 .projectGrid {
@@ -325,39 +430,94 @@ export default {
   border: var(--colour-panel-hard);
   gap: 20px;
   width: 70%;
+  margin-bottom: 2em;
 }
 
 .project {
   min-height: 150px;
   background-color: transparent;
-  border-radius: 10px;
+  border-radius: 1em;
   border: 3px dashed var(--colour-panel-hard);
   display: grid;
-  grid-template-rows: repeat(2, 1fr);
+  grid-template-rows: auto;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  --tag-colour: var(--colour-background);
+  --tag-bg-colour: var(--colour-panel-hard);
+  --delete-display: none;
+  --svg-filter: invert(90%) sepia(97%) saturate(4765%) hue-rotate(212deg)
+    brightness(84%) contrast(107%);
+  text-align: center;
 }
 .project:hover {
   transform: scale(1.1);
+  color: var(--colour-background);
   background-color: var(--colour-interactable-hover);
-  transition: 0.2s ease-in-out;
+  border: none;
+  --tag-colour: var(--colour-text);
+  --tag-bg-colour: var(--colour-background);
+  --delete-display: inherit;
+  --svg-filter: none;
+  transition: 0.2s ease-in;
 }
-.project h3,
-.project p {
-  text-align: center;
+.project button.delete {
+  position: absolute;
+  display: var(--delete-display);
+  color: var(--colour-background);
+  background-color: transparent;
+  top: 0;
+  width: 1.5em;
+  height: 1.5em;
+  font-size: 1.1em;
+  line-height: 0.8em;
+  padding-bottom: 0.2em;
+  border-radius: 100%;
+  font-family: "Fredoka";
+  margin-bottom: auto;
+}
+.project button.delete:hover {
+  color: var(--colour-interactable);
+  background-color: var(--colour-background);
 }
 
-.addProject {
-  background-color: var(--colour-panel-hard);
-  cursor: pointer;
+.project h3 {
+  font-family: "Delta Gothic One";
+  line-height: 1em;
+  margin: 1.2em 0.25em 0 0.25em;
+}
+.project p.description {
+  margin: 0.25em;
 }
 
-.addProject span {
-  font-size: 24px;
-  background-color: var(--colour-panel-soft);
-  color: var(--colour-text);
+.project .tags {
+  display: flex;
+  justify-content: center;
+  flex-flow: row wrap;
+  gap: 0.25em;
+  margin: 0.5em 0.25em 0.25em 0.25em;
 }
+.project .tags p {
+  padding: 0 0.25em 0 0.25em;
+  border-radius: 0.25em;
+  font-weight: 600;
+  color: var(--tag-colour);
+  background-color: var(--tag-bg-colour);
+}
+
+.addProject img {
+  filter: var(--svg-filter);
+}
+.addProject p {
+  font-weight: 600;
+}
+.addProject .plus {
+  font-family: "Fredoka";
+  font-size: 4em;
+  line-height: 0.2em;
+  padding-bottom: 0.26em;
+}
+
 .project img {
   width: 100%;
   height: 75px;
@@ -367,19 +527,64 @@ export default {
 }
 .popupContent {
   text-align: center;
-  background-color: var(--colour-panel-soft);
+  color: var(--colour-background);
+  background-color: var(--colour-interactable);
   display: flex;
   border-radius: 10px;
   flex-direction: column;
 }
+.popupContent h3 {
+  font-family: "Delta Gothic One";
+}
+.popupContent .multiple-dropdown {
+  background-color: var(--colour-background);
+  width: fit-content;
+  justify-self: center;
+  border-radius: 0.5em;
+  margin-top: 0.25em;
+  align-self: center;
+}
+.popupContent textarea,
+.popupContent input {
+  color: var(--colour-text);
+  background-color: var(--colour-background);
+  padding-left: 0.25em;
+  margin: 0 0.25em 0 0.25em;
+}
+
 .buttonContainer {
   margin-top: auto;
   display: flex;
   justify-content: space-between;
   border: 3px var(--colour-panel-hard);
   padding: 0 10px;
+  transition: all 200ms;
+}
+.buttonContainer button {
+  margin: 0.25em 0 0.25em 0;
+  padding: 0 0.25em 0 0.25em;
+  background-color: transparent;
+  border-radius: 0em;
 }
 .buttonContainer button:hover {
-  background-color: var(--colour-interactable-hover);
+  color: var(--colour-background);
+  background-color: var(--colour-text);
+  border-radius: 0.25em;
+}
+
+select[multiple] option:checked {
+  background-color: var(--selected-color);
+  color: rgb(188, 26, 26);
+}
+
+@media (max-width: 900px) {
+  .projectGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 550px) {
+  .projectGrid {
+    grid-template-columns: repeat(1, 1fr);
+  }
 }
 </style>

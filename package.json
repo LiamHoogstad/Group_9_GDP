@@ -28,5 +28,8 @@
   "bugs": {
     "url": "https://github.com/LiamHoogstad/Group_9_GDP/issues"
   },
-  "homepage": "https://github.com/LiamHoogstad/Group_9_GDP#readme"
+  "homepage": "https://github.com/LiamHoogstad/Group_9_GDP#readme",
+  "main": "vite.config.js",
+  "keywords": [],
+  "license": "ISC"
 }
