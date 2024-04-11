@@ -1,6 +1,6 @@
-# Group_9_GDP - Release 1
+# Group_9_GDP - Release 2
 
-This branch is our release 1 of our Group Design Project, MusiCollab. MusiCollab is aimed to be a collaborative music creation website where you can create and edit projects with friends and strangers by adding tracks, manipulating their audio settings and much more! We achieved all of goal for this release and an extra feature of a working custom volume slider.
+This version is the second release of our Group Design Project, MusiCollab. MusiCollab is aimed to be a collaborative music creation website where you can create and edit projects with friends and strangers by adding tracks, manipulating their audio and much more! We successfully achieved all our goals for this release, and all the features are outlined at the bottom of this document.
 
 ---
 
@@ -145,6 +145,13 @@ Ensure the latest version of Node.js is installed on your device
   A detailed view for individual projects, containing specific functionalities for project management and collaboration.
 - Slider.vue
   A custom slider component, used within the application for settings such as volume control.
+- ExplorePage.vue
+  A view that allows users to see all other users' project, filter them by different criteria, listen to them and contribute to those projects
+- AudioEditor.vue
+  A custom component which is draggable in the project view, and used for changing a track's position within a song
+- HamburgerMenu.vue
+  This popout menu from the right side of the screen allows the user to navigate to the main pages of MusiCollab, as well as sign out.
+
 
 # Communication with Flask Backend:
 
@@ -188,28 +195,38 @@ Ensure the latest version of Node.js is installed on your device
 
 ## Demonstration / Application Testing Purposes
 
-We would like to guide you through 2 processes for your assessment.
+We would like to guide you through 2 processes for logging in to your account.
 
 - 1. Existing user:
      On the landing page you will click on the page that allows you to SIGN IN.
      Use:
-     username: jbcfenlon@gmail.com
-     password: GroupDesignProject9!  
-     here you will be brought to an existing user profile page with their own custom profile picture and their projects that exist already. Feel free to click and test any of these. You can change the profile picture, or click on any of the projects and use the play/pause button as you wish and make use of our custom volume slider.
+     username: release2@tcd.ie
+     password: GroupDesignProject9!
+     Here you will be brought to an existing user profile page with their own custom profile picture and their projects that exist already. Feel free to click and test any of these.
 - 2. New user:
      On the landing page you will click on the page that allows you to SIGN UP.
      Sign up with your own details ensuring a valid and unused email, password that is at least 8 characters long, has a number, capital letter and a special character (all passwords are hashed for privacy reasons), a username, and a DOB (must be over 18)
      Upon completion you will be brought to the profile page where you can customise your profile with your own profile picture, add your own projects, and add/upload some of your own audio files to the project you created. To test uploading audio files you can use your own mp3 files or you can use the mp3 files we have provided in the assets folder in frontend. Your signup information has all been saved to the database and where applicable the profile picture, audio files and project details are also all saved for future use so they can be played and streamed rather than locally.
 
+There are various pages in the MusiCollab application which can be used for various reasons:
+
+- 1. Profile Page:
+     The profile page of a user lists all the projects that have been created by the user, or projects that the user has opted to contribute to. From the profile page, users can click “Add Project” to create new music projects with a specific title and description. When creating a new  project, the users can add project titles, descriptions, and tags for genres and instruments used, which will be linked to their project. Users can also delete their projects by clicking the 'x' in the top right of a project
+     
+     The profile page is also personalized and has a feature where the users to change their profile pictures. The hamburger menu on the top right gives easy access to the Explore Page and Signing Out.
+
+- 2. The Project Page:
+    The project page displays the specific music project that the user clicked into, whether their own or someone else's from the explore page. At the top left you can view the project name along with the instrument and genre tags for this project. If this is your own project, you can click on the project name and type to change it, additionally you can click on the dropdown "Instrument" and "Genre" menus to change the tags for your project. In the middle of the top bar, there is a master play button that will play all of the tracks on the project. Underneath this is a master volume control. To the far right is a Hamburger menu that can be used to go back to your account, the explore page, or to logout. If this is your own project, you will be able to add new tracks using the "Add New Track" button. Once you upload the audio, the track will appear. On each track you have the ability adjust the specific track volume using the volume slider on that track, mute the track by clicking the M' button, solo the track by clicking the small 'S' as well as change when the track begins playing by dragging the offset left or right. However, if this the user currently logged in does not own the project they are viewing, they will not be able to make modifications to the project such as changing track volume, muting, or changing the track offset. However, if a user wishes to make their own adjustments to a track, they can click the "Contribute" button, which appears underneath all the tracks, which makes a new copy of this project for the user that they can edit. At the bottom left of the project page are an upvote and downvote for users to vote on this project. In the bottom right of the project page is the comments button. Clicking the comments button causes the comments section to popup, where you can post a comment. Users are able to delete their own comments. On comments you can see the username, how long ago the comment was made, and the comment itself. By clicking the small "X" in the upper right of the comment section you can exit out of this section.
+
+- 3. The Explore Page:
+    The explore page displays the music projects of all the users of MusiColab. On this page, users can scroll through the projects and listen to them. There are features present such as a search bar at the top of the page for searching projects by title. Users can also filter by genre and instrument, and sort by other parameters. Users can click into a project name which will bring them to a version of project's page with does not allow them to modify the project they are viewing (as they do not own that project). There is also an option to contribute to a project, both from within that viewers project view and from the explore page. Clicking the contribute button will create a copy of the project under your own profile. New copies of a project will allow a user to start where another user left off, modifying the project in whichever way they desire. Users can also like and dislike each project.
+
+Navigating MusiCollab:
+    To Navigate through the various pages through MusiCollab, you can use the 'Hamburger' menu button, which will be displayed on the top right of your screen. The hamburger presents you with options to go to the explore page, your profile page, and an option to sign out of your account
+    Naturally, clicking on various other items such as projects from the profile or explore page will bring you to those respective pages.
+
 Other Notes:
 
-- You can close the application and reopen it to access accounts, projects and audio files you created/uploaded
-  previously
-- You can navigate from the projects page to the profile page back simply going back a page as normal in your browser
+- Every action you take in MusiCollab will be stored in the database, and changes you make will still be available whenever you log back in.
 - Don't forget the '.env' file!
-- Some frontend buttons exist, such as burger menu icon (top right) or top navigation bar in the project view,
-  and don't have any functionality implemented yet.
-  - These buttons were not in scope for release 1, and they are just placeholders for now.
-- If you upload an audio file over an existing audio file in a project, it will delete/overwrite the existing/current
-  audio file in the project
 - Have fun!
